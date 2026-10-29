@@ -285,7 +285,7 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .dtop h1{margin:0 8px;font-size:26px;font-weight:800;letter-spacing:-.6px;white-space:nowrap;display:flex;align-items:center;gap:10px}
 .dtop h1>span{font-weight:500;color:var(--muted)}
 .dtop .sp{flex:1}
-.dtop .sform{padding:0;width:min(300px,28vw)}
+.dtop .sform{padding:0;width:min(260px,22vw)}
 .dtop .sform input{height:42px;font-size:15px}
 .dtop .sform button{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);padding:0}
 .dmain .banner{margin:0 0 12px}
@@ -353,6 +353,20 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .in-l{animation:inL .22s ease-out}
 .grab{padding:0;box-sizing:content-box;border-top:10px solid transparent;border-bottom:10px solid transparent;background-clip:padding-box;margin:-10px auto 6px}
 @media (prefers-reduced-motion:reduce){.in-r,.in-l{animation:none}}
+.titlebtn{font:inherit;letter-spacing:inherit;color:inherit;display:inline-flex;align-items:center;gap:8px;border-radius:14px;padding:2px 8px;margin-left:-8px;white-space:nowrap}
+.titlebtn:hover{background:var(--card)}
+.titlebtn .chev{flex:none;color:var(--muted);margin-top:3px}
+.titlebtn>span{font-weight:500;color:var(--muted)}
+.top .titlebtn{gap:5px}
+.top h1{font-size:26px}
+.top .hbtns .icon{width:40px}
+.yrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.yrow h2{font-size:28px}
+.mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mbtn{height:56px;border-radius:18px;background:var(--raise);box-shadow:var(--shadow);font-size:16px;font-weight:700}
+.mbtn:hover{background:var(--soft)}
+.mbtn.isnow{box-shadow:inset 0 0 0 2px var(--accent),var(--shadow)}
+.mbtn.cur{background:var(--sel);color:var(--selfg)}
 </style>
 </head>
 <body>
@@ -482,6 +496,7 @@ const I = {
   pin: sv('<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>', 20),
   cal: sv('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/>', 20),
   bell: sv('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', 20),
+  down: '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
   rep: sv('<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>', 20),
   calB: sv('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/>', 26),
   check: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>',
@@ -1231,12 +1246,24 @@ function eventSheet() {
   ${e.desc ? `<p class="desc">${esc(e.desc)}</p>` : ''}
   <div class="btns"><button class="btn primary" data-act="edit">Ändra</button><button class="btn ghost" data-act="gotoday" data-d="${dash(e.start)}">Visa dagen</button><button class="btn ghost" data-act="close">Stäng</button></div>`);
 }
+function monthPicker() {
+  const y = S.pickYear, t = today0(), cur = S.view === 'month' ? S.month : S.sel;
+  const months = MONTHS.map((n, i) => {
+    const isCur = cur.getFullYear() === y && cur.getMonth() === i;
+    const isNow = t.getFullYear() === y && t.getMonth() === i;
+    return `<button class="mbtn${isCur ? ' cur' : ''}${isNow ? ' isnow' : ''}" data-act="pickm" data-m="${i}"${isCur ? ' aria-pressed="true"' : ''}>${cap(MONTHS_SHORT[i])}</button>`;
+  }).join('');
+  return dlg(`<div class="yrow"><button class="icon" data-act="pyear" data-k="-1" aria-label="Föregående år">${I.prev}</button><h2 id="sht">${y}</h2><button class="icon" data-act="pyear" data-k="1" aria-label="Nästa år">${I.next}</button></div>
+  <div class="mgrid" role="group" aria-label="Välj månad">${months}</div>
+  <div class="btns" style="margin-top:16px"><button class="btn ghost" data-act="pickToday">Gå till idag</button></div>`);
+}
 function sheet() {
   if (S.sheet === 'settings') return settingsSheet();
   if (S.sheet === 'import') return importSheet();
   if (S.sheet === 'form' && S.form) return formSheet();
   if (S.sheet === 'cal' && S.calForm) return calSheet();
   if (S.sheet === 'event') return eventSheet();
+  if (S.sheet === 'mpick') return monthPicker();
   return '';
 }
 
@@ -1281,7 +1308,7 @@ function viewMonth() {
   const title = (isT ? 'Idag, ' + DAYS[S.sel.getDay()] : cap(DAYS[S.sel.getDay()])) + ' ' + S.sel.getDate() + ' ' + MONTHS[S.sel.getMonth()];
   const list = evs.length ? evs.map(e => evRow(e, S.sel)).join('') : `<p class="empty">Inget inplanerat den här dagen.</p>`;
   return `<div class="view">
-  <header class="top mhead"><h1>${cap(MONTHS[m.getMonth()])} <span>${m.getFullYear()}</span></h1>
+  <header class="top mhead"><h1><button class="titlebtn" data-act="openmp" aria-label="Välj månad och år">${cap(MONTHS[m.getMonth()])} <span>${m.getFullYear()}</span>${I.down}</button></h1>
   <div class="hbtns"><button class="pill" data-act="today">Idag</button><button class="icon" data-act="prev" aria-label="Föregående månad">${I.prev}</button><button class="icon" data-act="next" aria-label="Nästa månad">${I.next}</button></div></header>
   <div class="grid"><div class="whead" aria-hidden="true"><span class="v">v.</span><span>M</span><span>T</span><span>O</span><span>T</span><span>F</span><span>L</span><span class="s">S</span></div>${grid}</div>
   <section class="list"><div class="lhead"><h2>${title}</h2><button data-act="openday">Öppna dagen</button></div>${holiday(S.sel) ? `<p class="holi">${esc(holiday(S.sel).n)}</p>` : ''}${list}</section></div>`;
@@ -1425,7 +1452,7 @@ function deskView() {
   const seg = [['day', 'Dag'], ['week', 'Vecka'], ['month', 'Månad']].map(v => `<button data-act="setview" data-v="${v[0]}" aria-pressed="${S.view === v[0]}">${v[1]}</button>`).join('');
   return `<div class="desk">${sidePanel()}<main class="dmain">
     <header class="dtop"><button class="pill" data-act="today">Idag</button><button class="icon" data-act="prev" aria-label="Föregående">${I.prev}</button><button class="icon" data-act="next" aria-label="Nästa">${I.next}</button>
-    <h1>${deskTitle()}</h1><span class="sp"></span>${searchForm()}<span class="sp"></span><div class="seg" role="group" aria-label="Vy">${seg}</div>
+    <h1><button class="titlebtn" data-act="openmp" aria-label="Välj månad och år">${deskTitle()}${I.down}</button></h1><span class="sp"></span>${searchForm()}<span class="sp"></span><div class="seg" role="group" aria-label="Vy">${seg}</div>
     <button class="icon" data-act="settings" aria-label="Inställningar" title="Inställningar">${I.gearS}</button></header>
     ${banners()}${content}
   </main></div>`;
@@ -1525,6 +1552,16 @@ document.addEventListener('click', ev => {
     case 'gotoday': selectDay(parseDate(el.dataset.d)); S.view = 'day'; S.sheet = null; S.scrollDay = true; render(); break;
     case 'settings': S.sheet = 'settings'; S.calForm = null; render(); break;
     case 'settheme': setTheme(el.dataset.v); break;
+    case 'openmp': S.pickYear = (S.view === 'month' ? S.month : S.sel).getFullYear(); S.sheet = 'mpick'; render(); break;
+    case 'pyear': S.pickYear += Number(el.dataset.k); render(); break;
+    case 'pickm': {
+      const mo = new Date(S.pickYear, Number(el.dataset.m), 1);
+      const d = (t.getFullYear() === mo.getFullYear() && t.getMonth() === mo.getMonth()) ? t : mo;
+      selectDay(d); if (S.view === 'search') S.view = 'month';
+      if (S.view !== 'month') S.scrollDay = true;
+      S.sheet = null; render(); break;
+    }
+    case 'pickToday': selectDay(t); if (S.view === 'search') S.view = 'month'; if (S.view !== 'month') S.scrollDay = true; S.sheet = null; render(); break;
     case 'pushtoggle': S.push ? pushOff() : pushOn(); break;
     case 'pushtest': pushTest(); break;
     case 'toggletheme': setTheme(isDark() ? 'light' : 'dark'); break;
