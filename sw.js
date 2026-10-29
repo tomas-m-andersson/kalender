@@ -1,7 +1,7 @@
 /* Gör att kalendern kan installeras som app, öppnas snabbt och visa push-påminnelser.
    Sidans egna filer hämtas alltid från nätet först (så du får senaste versionen)
    och sparas som reserv om nätet saknas. Google och GitHub hämtas aldrig härifrån. */
-const CACHE = 'kalender-v14';
+const CACHE = 'kalender-v15';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './badge-96.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => {}));
