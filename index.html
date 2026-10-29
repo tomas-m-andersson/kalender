@@ -380,6 +380,8 @@ const DAYS = ['söndag','måndag','tisdag','onsdag','torsdag','fredag','lördag'
 const DAYS_SHORT = ['sön','mån','tis','ons','tor','fre','lör'];
 const EVENT_COLORS = {1:'#7986CB',2:'#33B679',3:'#8E24AA',4:'#E67C73',5:'#F6BF26',6:'#F4511E',7:'#039BE5',8:'#616161',9:'#3F51B5',10:'#0B8043',11:'#D50000'};
 const PALETTE = ['#2450D8','#1F7A66','#C2570C','#B4232C','#7B3FA0','#0E7490','#A16207','#4B5563'];
+const PUSH_SERVER = 'https://skidor-push.tomas-m-andersson.workers.dev';
+const REMIND = [[-1, 'Ingen påminnelse'], [0, 'När den börjar'], [5, '5 min innan'], [15, '15 min innan'], [30, '30 min innan'], [60, '1 timme innan'], [120, '2 timmar innan'], [1440, '1 dag innan']];
 const REP = { '': 'Aldrig', d: 'Varje dag', w: 'Varje vecka', '2w': 'Varannan vecka', m: 'Varje månad', y: 'Varje år' };
 
 const today0 = () => sod(new Date());
@@ -392,7 +394,7 @@ const S = {
   loading: 0, saving: 0, dirty: false, error: '', lastFetch: 0,
   sheet: null, cur: null, form: null, calForm: null, imp: null,
   scrollDay: false, theme: 'auto', style: 'manad', lockErr: '', lockBusy: false, installPrompt: null,
-  gToken: null, gTokenExp: 0,
+  gToken: null, gTokenExp: 0, push: false, pushBusy: false, pushMsg: '',
   search: { q: '', results: null }
 };
 
@@ -479,6 +481,7 @@ const I = {
   clock: sv('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 20),
   pin: sv('<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>', 20),
   cal: sv('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/>', 20),
+  bell: sv('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', 20),
   rep: sv('<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>', 20),
   calB: sv('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/>', 26),
   check: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>',
@@ -609,10 +612,11 @@ function rebuild() {
     let end = parseLocal(raw.end);
     if (!start) return null;
     if (!end || !(end > start)) end = allDay ? addDays(start, 1) : new Date(start.getTime() + 3600000);
-    const e = { id: raw.id, cal: raw.cal, title: raw.title || '(Ingen titel)', location: raw.location || '', desc: raw.desc || '', allDay, start, end, rep: raw.rep && REP[raw.rep.f] && raw.rep.f ? raw.rep : null, ex: new Set(raw.ex || []), color: raw.color || '', gid: raw.gid || '' };
+    const e = { id: raw.id, cal: raw.cal, title: raw.title || '(Ingen titel)', location: raw.location || '', desc: raw.desc || '', allDay, start, end, rep: raw.rep && REP[raw.rep.f] && raw.rep.f ? raw.rep : null, ex: new Set(raw.ex || []), color: raw.color || '', gid: raw.gid || '', remind: typeof raw.remind === 'number' ? raw.remind : null };
     S.byId.set(e.id, e);
     return e;
   }).filter(Boolean);
+  pushSync();
 }
 
 /* ---------- upprepning ---------- */
@@ -692,6 +696,109 @@ function demoData() {
   ev('l', 'Kalas', addDays(ws, 12), 14, 16, 'Lekland');
   d.events.push({ id: newId(), cal: 'f', title: 'Morfar fyller år', start: dash(addDays(t, 4)), end: dash(addDays(t, 5)), allDay: true, rep: { f: 'y', until: '' } });
   return d;
+}
+
+/* =====================================================================
+   PUSH-NOTISER (samma push-tjänst på Cloudflare som SKIDOR)
+   ===================================================================== */
+const pushStod = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+function defRemind() { const v = S.data && S.data.settings && S.data.settings.remind; return typeof v === 'number' ? v : 15; }
+function remindOf(e) { return typeof e.remind === 'number' ? e.remind : defRemind(); }
+function remindLabel(m) { const r = REMIND.find(x => x[0] === m); return r ? r[1] : m + ' min innan'; }
+function minText(m) { return m < 60 ? m + ' min' : m === 60 ? '1 timme' : (m / 60) + ' timmar'; }
+function pushText(o, m) {
+  if (o.allDay) return m >= 1440 ? 'I morgon, heldag' : 'Idag, heldag';
+  const where = o.location ? ', ' + o.location : '';
+  if (m === 0) return 'Börjar nu, kl ' + hm(o.start) + where;
+  if (m >= 1440) return 'I morgon kl ' + hm(o.start) + where;
+  return 'Om ' + minText(m) + ', kl ' + hm(o.start) + where;
+}
+function pushList() {
+  const now = Date.now(), end = addDays(today0(), 60).getTime(), out = [];
+  if (!S.data) return out;
+  const vis = new Set(S.calendars.filter(c => c.on).map(c => c.id));
+  for (const b of S.base) {
+    if (!vis.has(b.cal)) continue;
+    const m = remindOf(b); if (m < 0) continue;
+    for (const o of occurrences(b, new Date(now), new Date(end + 2 * 86400000))) {
+      const base = o.allDay ? new Date(o.start.getFullYear(), o.start.getMonth(), o.start.getDate(), 8, 0) : o.start;
+      const at = o.allDay ? base.getTime() - (m >= 1440 ? 86400000 : 0) : base.getTime() - m * 60000;
+      if (at < now + 30000 || at > end) continue;
+      out.push({ id: (o.id + '@' + (o.occ || '')).slice(0, 120), at, titel: o.title, text: pushText(o, m) });
+    }
+  }
+  return out.sort((a, b) => a.at - b.at).slice(0, 480);
+}
+const tillUint8 = b64 => { const x = atob(b64.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((b64.length + 3) % 4)); return Uint8Array.from(x, c => c.charCodeAt(0)); };
+async function pushAnrop(vag, kropp) {
+  const r = await fetch(PUSH_SERVER + vag, kropp ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(kropp) } : {});
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.fel || data.info || 'Fel ' + r.status);
+  return data;
+}
+async function hamtaSub(skapa) {
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (sub || !skapa) return sub;
+  const { publicKey } = await pushAnrop('/nyckel');
+  try { sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: tillUint8(publicKey) }); }
+  catch (fel) {
+    const gammal = await reg.pushManager.getSubscription();
+    if (!gammal) throw fel;
+    await gammal.unsubscribe();
+    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: tillUint8(publicKey) });
+  }
+  return sub;
+}
+function pushFelText(fel) {
+  const t = String((fel && fel.message) || fel);
+  if (/push service|registration failed|AbortError|not supported/i.test(t) && navigator.brave) return 'Brave blockerar push. Se instruktionerna nedan.';
+  return t;
+}
+let pushTimer = null;
+function pushSync(extra) {
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    if (!S.push || !pushStod || S.demo || S.mode !== 'app') return;
+    try { const sub = await hamtaSub(true); await pushAnrop('/synka', { sub: sub.toJSON(), paminnelser: pushList().concat(extra || []) }); }
+    catch (fel) { console.warn('Push-synk misslyckades', fel); }
+  }, extra ? 0 : 900);
+}
+async function pushOn() {
+  S.pushBusy = true; S.pushMsg = ''; render();
+  try {
+    if (S.demo) throw new Error('Push fungerar inte i exempelläget.');
+    if (!pushStod) throw new Error('Den här webbläsaren kan inte ta emot push-notiser.');
+    if (location.protocol !== 'https:') throw new Error('Push fungerar bara på den riktiga adressen (https).');
+    if (await Notification.requestPermission() !== 'granted') throw new Error('Du tillät inte aviseringar. Tillåt dem för sidan i webbläsarens inställningar och försök igen.');
+    const sub = await hamtaSub(true);
+    const r = await pushAnrop('/synka', { sub: sub.toJSON(), paminnelser: pushList() });
+    S.push = true; store.set('kal_push', true);
+    S.pushMsg = 'Påslaget. ' + r.antal + ' kommande ' + (r.antal === 1 ? 'påminnelse' : 'påminnelser') + ' är inlagda.';
+  } catch (fel) { S.pushMsg = pushFelText(fel); }
+  S.pushBusy = false; render();
+}
+async function pushOff() {
+  S.pushBusy = true; render();
+  try {
+    const sub = await hamtaSub(false);
+    if (sub) { await pushAnrop('/avsluta', { endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe(); }
+  } catch (e) {}
+  S.push = false; store.set('kal_push', false); S.pushMsg = 'Avstängt på den här enheten.'; S.pushBusy = false; render();
+}
+function pushTest() {
+  pushSync([{ id: 'test-' + Date.now(), at: Date.now() + 5000, titel: 'Kalender', text: 'Testnotis – påminnelserna fungerar!' }]);
+  S.pushMsg = 'Testnotisen kommer inom en minut.'; render();
+}
+function pushSettings() {
+  const opts = REMIND.map(r => `<option value="${r[0]}"${defRemind() === r[0] ? ' selected' : ''}>${r[1]}</option>`).join('');
+  const blocked = pushStod && Notification.permission === 'denied';
+  return `<div class="calline"><button class="calrow" role="switch" aria-checked="${S.push}" data-act="pushtoggle"${S.pushBusy ? ' disabled' : ''}><span style="flex:1;min-width:0"><span style="display:block;font-size:16px;font-weight:600">Push-notiser på den här enheten</span><span class="note" style="display:block;margin:2px 0 0">${blocked ? 'Blockerade – tillåt aviseringar för sidan i webbläsaren.' : 'Kommer även när appen är stängd.'}</span></span><span class="switch"><i></i></span></button></div>
+  <div class="frow" style="padding:8px 0;border-top:0"><label for="s-remind" style="font-size:15px">Standardpåminnelse</label><select class="fsel" id="s-remind">${opts}</select></div>
+  <p class="note" style="margin-top:0">Gäller alla händelser som inte har en egen påminnelse, även importerade.</p>
+  ${S.pushMsg ? `<p class="note" role="status" style="color:var(--fg);font-weight:600">${esc(S.pushMsg)}</p>` : ''}
+  ${S.push ? '<div class="btns" style="margin-top:10px"><button class="btn ghost" data-act="pushtest">Skicka testnotis</button></div>' : ''}
+  ${navigator.brave ? '<p class="note">I Brave: på datorn, slå på "Använd Googles tjänster för pushmeddelanden" under brave://settings/privacy. På Android, tillåt aviseringar för Brave i telefonens inställningar.</p>' : ''}`;
 }
 
 /* =====================================================================
@@ -845,13 +952,13 @@ async function impSave() {
 function openForm(b, occ, day, hour) {
   if (b) {
     const endShown = b.allDay ? addDays(b.end, -1) : b.end;
-    S.form = { id: b.id, title: b.title, allDay: b.allDay, sd: dash(b.start), st: hm(b.start), ed: dash(endShown), et: hm(b.end), rep: b.rep ? b.rep.f : '', until: (b.rep && b.rep.until) || '', location: b.location, cal: b.cal, desc: b.desc, occ: occ || null, isRep: !!b.rep, err: '', del: false };
+    S.form = { id: b.id, title: b.title, allDay: b.allDay, sd: dash(b.start), st: hm(b.start), ed: dash(endShown), et: hm(b.end), rep: b.rep ? b.rep.f : '', until: (b.rep && b.rep.until) || '', location: b.location, cal: b.cal, desc: b.desc, occ: occ || null, isRep: !!b.rep, remind: typeof b.remind === 'number' ? String(b.remind) : '', err: '', del: false };
   } else {
     const d = day || S.sel, n = new Date();
     let h = hour != null ? hour : (sameDay(d, n) ? Math.min(23, n.getHours() + 1) : 9);
     const last = store.get('kal_lastcal', '');
     const cal = (calById(last) && last) || (S.calendars[0] && S.calendars[0].id);
-    S.form = { id: null, title: '', allDay: false, sd: dash(d), st: pad(h) + ':00', ed: dash(d), et: h >= 23 ? '23:59' : pad(h + 1) + ':00', rep: '', until: '', location: '', cal, desc: '', occ: null, isRep: false, err: '', del: false };
+    S.form = { id: null, title: '', allDay: false, sd: dash(d), st: pad(h) + ':00', ed: dash(d), et: h >= 23 ? '23:59' : pad(h + 1) + ':00', rep: '', until: '', location: '', cal, desc: '', occ: null, isRep: false, remind: '', err: '', del: false };
   }
   S.sheet = 'form'; render();
   setTimeout(() => { const t = document.getElementById('f-title'); if (t && !S.form.id) t.focus(); }, 60);
@@ -885,6 +992,7 @@ function formSheet() {
     <div class="fgroup">
       <div class="frow"><label for="f-rep">Upprepa</label><select class="fsel" id="f-rep" name="rep">${reps}</select></div>
       <div class="frow repu"${f.rep ? '' : ' hidden'}><label for="f-until">Till och med</label><input type="date" class="fsel" id="f-until" name="until" value="${f.until}"></div>
+      <div class="frow"><label for="f-rem">Påminnelse</label><select class="fsel" id="f-rem" name="remind"><option value=""${f.remind === '' ? ' selected' : ''}>Standard (${remindLabel(defRemind()).toLowerCase()})</option>${REMIND.map(r => `<option value="${r[0]}"${f.remind === String(r[0]) ? ' selected' : ''}>${r[1]}</option>`).join('')}</select></div>
     </div>
     <fieldset class="fgroup"><legend class="sr">Kalender</legend><div class="cpick">${cals}</div></fieldset>
     <div class="fgroup"><label for="f-desc" class="sr">Anteckning</label><textarea class="fin" id="f-desc" name="desc" rows="3" placeholder="Anteckning (valfritt)">${esc(f.desc)}</textarea></div>
@@ -895,7 +1003,7 @@ function formSheet() {
 }
 function readForm(form) {
   const f = S.form;
-  ['title', 'location', 'sd', 'st', 'ed', 'et', 'rep', 'until', 'desc'].forEach(n => { if (form.elements[n]) f[n] = form.elements[n].value; });
+  ['title', 'location', 'sd', 'st', 'ed', 'et', 'rep', 'until', 'desc', 'remind'].forEach(n => { if (form.elements[n]) f[n] = form.elements[n].value; });
   f.allDay = form.elements.allDay.checked;
   const c = form.querySelector('input[name="cal"]:checked'); if (c) f.cal = c.value;
 }
@@ -921,6 +1029,7 @@ function submitEvent(form) {
   if (f.location.trim()) fields.location = f.location.trim();
   if (f.desc.trim()) fields.desc = f.desc.trim();
   if (f.rep) fields.rep = { f: f.rep, until: f.until || '' };
+  if (f.remind !== '' && f.remind != null) fields.remind = Number(f.remind);
   store.set('kal_lastcal', f.cal);
   S.sheet = null; S.form = null;
   selectDay(parseDate(f.sd));
@@ -1085,6 +1194,7 @@ function settingsSheet() {
     <p class="note">Auto följer telefonens eller datorns inställning.</p>
     <h3 class="shh">Kalendrar</h3>${rows}
     <div class="btns" style="margin-top:10px"><button class="btn ghost" data-act="newcal">+ Ny kalender</button></div>
+    <h3 class="shh">Påminnelser</h3>${pushSettings()}
     <h3 class="shh">Google Kalender</h3><p class="note" style="margin-top:0">Kopiera in händelser från Google till din egen kalender. Inget ändras i Google, och sidan behöver inte Google efteråt.</p>
     <div class="btns" style="margin-top:10px"><button class="btn ghost" data-act="import">Importera från Google Kalender</button></div>
     <h3 class="shh">Var sparas allt?</h3><p class="note" style="margin-top:0">${S.demo ? 'Exempelläget sparar ingenting.' : `Allt sparas i <b>${DATA_FILE}</b> i ditt privata repo <b>${DATA_REPO}</b> på GitHub. ${when}`}</p>
@@ -1114,8 +1224,10 @@ function eventSheet() {
   if (!e) return '';
   const loc = e.location ? `<div>${I.pin}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location)}" target="_blank" rel="noopener">${esc(e.location)}</a></div>` : '';
   const rep = e.base.rep ? `<div>${I.rep}<span>${esc(repText(e.base))}</span></div>` : '';
+  const rm = remindOf(e.base);
+  const bell = rm >= 0 ? `<div>${I.bell}<span>Påminnelse ${esc(remindLabel(rm).toLowerCase())}${S.push ? '' : ' (push är avstängt på den här enheten)'}</span></div>` : '';
   return dlg(`<div style="display:flex;gap:12px;align-items:flex-start"><i style="width:14px;height:14px;border-radius:4px;background:${esc(e.color)};flex:none;margin-top:7px"></i><h2 id="sht">${esc(e.title)}</h2></div>
-  <div class="meta"><div>${I.clock}<span>${esc(whenText(e))}</span></div>${rep}${loc}<div>${I.cal}<span>${esc(calName(e.cal))}</span></div></div>
+  <div class="meta"><div>${I.clock}<span>${esc(whenText(e))}</span></div>${rep}${bell}${loc}<div>${I.cal}<span>${esc(calName(e.cal))}</span></div></div>
   ${e.desc ? `<p class="desc">${esc(e.desc)}</p>` : ''}
   <div class="btns"><button class="btn primary" data-act="edit">Ändra</button><button class="btn ghost" data-act="gotoday" data-d="${dash(e.start)}">Visa dagen</button><button class="btn ghost" data-act="close">Stäng</button></div>`);
 }
@@ -1413,6 +1525,8 @@ document.addEventListener('click', ev => {
     case 'gotoday': selectDay(parseDate(el.dataset.d)); S.view = 'day'; S.sheet = null; S.scrollDay = true; render(); break;
     case 'settings': S.sheet = 'settings'; S.calForm = null; render(); break;
     case 'settheme': setTheme(el.dataset.v); break;
+    case 'pushtoggle': S.push ? pushOff() : pushOn(); break;
+    case 'pushtest': pushTest(); break;
     case 'toggletheme': setTheme(isDark() ? 'light' : 'dark'); break;
     case 'togglecal': {
       const c = calById(el.dataset.id);
@@ -1463,6 +1577,11 @@ document.addEventListener('change', ev => {
     const p = E.st.value.split(':').map(Number), h = Math.min(23, p[0] + 1);
     E.et.value = p[0] >= 23 ? '23:59' : pad(h) + ':' + pad(p[1]);
   }
+});
+document.addEventListener('change', ev => {
+  if (ev.target.id !== 's-remind') return;
+  const v = Number(ev.target.value);
+  mutate(d => { d.settings = d.settings || {}; d.settings.remind = v; }, 'standardpåminnelse ' + remindLabel(v).toLowerCase());
 });
 document.addEventListener('submit', ev => {
   const f = ev.target;
@@ -1554,7 +1673,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 
 /* ---------- start ---------- */
 function boot() {
-  S.theme = store.get('kal_theme', 'auto'); applyTheme();
+  S.theme = store.get('kal_theme', 'auto'); S.push = store.get('kal_push', false); applyTheme();
   if (new URLSearchParams(location.search).has('demo')) { S.demo = true; S.data = demoData(); S.mode = 'app'; rebuild(); render(); return; }
   const tok = ghTok();
   if (!tok) { S.mode = 'lock'; render(); return; }
