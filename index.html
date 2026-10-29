@@ -1285,16 +1285,12 @@ function sidePanel() {
   let red = null;
   for (let k = 1; k < 400 && !red; k++) { const d = addDays(t, k), h = holiday(d); if (h && h.red) red = { d, h, k }; }
   const redW = red ? `<section class="w redday"><span class="rd"><b>${red.d.getDate()}</b><span>${MONTHS_SHORT[red.d.getMonth()]}</span></span><p><b>${esc(red.h.n)}</b><span>Nästa röda dag, ${cap(DAYS[red.d.getDay()]).toLowerCase()} om ${red.k} ${red.k === 1 ? 'dag' : 'dagar'}</span></p></section>` : '';
-  const cals = S.calendars.map(c => `<button class="ccheck" role="checkbox" aria-checked="${c.on}" data-act="togglecal" data-id="${esc(c.id)}" style="--c:${esc(c.color)}"><span class="box">${I.check}</span><span class="nm">${esc(c.name)}</span></button>`).join('');
   return `<aside class="side">
-    <div class="sidetop"><span class="brand"><i aria-hidden="true">${t.getDate()}</i>Kalender</span>
-    <button class="icon" data-act="toggletheme" aria-label="${isDark() ? 'Byt till ljust läge' : 'Byt till mörkt läge'}" title="${isDark() ? 'Ljust läge' : 'Mörkt läge'}">${isDark() ? I.sun : I.moon}</button>
-    <button class="icon" data-act="settings" aria-label="Inställningar" title="Inställningar">${I.gearS}</button></div>
+    ${hero}
     ${searchForm()}
     <button class="btn accent" data-act="new">${I.plusS}Ny händelse</button>
-    ${hero}${agenda}${redW}
+    ${agenda}${redW}
     <section class="w">${miniMonth()}</section>
-    <section class="w"><h3>Kalendrar</h3>${cals}<div style="margin-top:8px"><button class="smallbtn" data-act="newcal">+ Ny kalender</button></div></section>
   </aside>`;
 }
 function deskView() {
@@ -1306,7 +1302,8 @@ function deskView() {
   const seg = [['day', 'Dag'], ['week', 'Vecka'], ['month', 'Månad']].map(v => `<button data-act="setview" data-v="${v[0]}" aria-pressed="${S.view === v[0]}">${v[1]}</button>`).join('');
   return `<div class="desk">${sidePanel()}<main class="dmain">
     <header class="dtop"><button class="pill" data-act="today">Idag</button><button class="icon" data-act="prev" aria-label="Föregående">${I.prev}</button><button class="icon" data-act="next" aria-label="Nästa">${I.next}</button>
-    <h1>${deskTitle()}</h1><span class="sp"></span><div class="seg" role="group" aria-label="Vy">${seg}</div></header>
+    <h1>${deskTitle()}</h1><span class="sp"></span><div class="seg" role="group" aria-label="Vy">${seg}</div>
+    <button class="icon" data-act="settings" aria-label="Inställningar" title="Inställningar">${I.gearS}</button></header>
     ${banners()}${content}
   </main></div>`;
 }
