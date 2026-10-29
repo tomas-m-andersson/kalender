@@ -285,6 +285,9 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .dtop h1{margin:0 8px;font-size:26px;font-weight:800;letter-spacing:-.6px;white-space:nowrap;display:flex;align-items:center;gap:10px}
 .dtop h1>span{font-weight:500;color:var(--muted)}
 .dtop .sp{flex:1}
+.dtop .sform{padding:0;width:min(300px,28vw)}
+.dtop .sform input{height:42px;font-size:15px}
+.dtop .sform button{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);padding:0}
 .dmain .banner{margin:0 0 12px}
 .dmonth,.dweek{flex:1;display:flex;flex-direction:column;min-height:0;background:var(--raise);border-radius:26px;box-shadow:var(--shadow);overflow:hidden}
 .dmh{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
@@ -1270,7 +1273,7 @@ function sidePanel() {
   if (nowEv) status = `<button class="status" data-act="open" ${oAttr(nowEv)}><i style="background:${esc(nowEv.color)}"></i><span><b>Pågår nu: ${esc(nowEv.title)}</b>Till ${hm(nowEv.end)}${nx ? `, sedan ${esc(nx.title)} ${relDay(nx.start)} ${hm(nx.start)}` : ''}</span></button>`;
   else if (nx) status = `<button class="status" data-act="open" ${oAttr(nx)}><i style="background:${esc(nx.color)}"></i><span><b>Nästa: ${esc(nx.title)}</b>${cap(relDay(nx.start))} kl ${hm(nx.start)}${nx.location ? ', ' + esc(nx.location) : ''}</span></button>`;
   else status = `<div class="status"><span>Inget inplanerat de närmaste veckorna.</span></div>`;
-  const hero = `<section class="w hero" aria-label="Idag"><div class="hd"><span class="hnum">${t.getDate()}</span><span class="hl"><b>${cap(DAYS[t.getDay()])}</b><span>${cap(MONTHS[t.getMonth()])}, vecka ${isoWeek(t)}${holiday(t) ? ', ' + esc(holiday(t).n) : ''}</span></span></div>${status}</section>`;
+  const hero = `<section class="w hero" aria-label="Idag"><div class="hd"><span class="hnum">${t.getDate()}</span><span class="hl"><b>${cap(DAYS[t.getDay()])}</b><span>${cap(MONTHS[t.getMonth()])}, vecka ${isoWeek(t)}${holiday(t) ? ', ' + esc(holiday(t).n) : ''}</span></span></div></section>`;
   let ag = '';
   for (let k = 0; k < 7; k++) {
     const d = addDays(t, k);
@@ -1287,7 +1290,6 @@ function sidePanel() {
   const redW = red ? `<section class="w redday"><span class="rd"><b>${red.d.getDate()}</b><span>${MONTHS_SHORT[red.d.getMonth()]}</span></span><p><b>${esc(red.h.n)}</b><span>Nästa röda dag, ${cap(DAYS[red.d.getDay()]).toLowerCase()} om ${red.k} ${red.k === 1 ? 'dag' : 'dagar'}</span></p></section>` : '';
   return `<aside class="side">
     ${hero}
-    ${searchForm()}
     <button class="btn accent" data-act="new">${I.plusS}Ny händelse</button>
     ${agenda}${redW}
     <section class="w">${miniMonth()}</section>
@@ -1302,7 +1304,7 @@ function deskView() {
   const seg = [['day', 'Dag'], ['week', 'Vecka'], ['month', 'Månad']].map(v => `<button data-act="setview" data-v="${v[0]}" aria-pressed="${S.view === v[0]}">${v[1]}</button>`).join('');
   return `<div class="desk">${sidePanel()}<main class="dmain">
     <header class="dtop"><button class="pill" data-act="today">Idag</button><button class="icon" data-act="prev" aria-label="Föregående">${I.prev}</button><button class="icon" data-act="next" aria-label="Nästa">${I.next}</button>
-    <h1>${deskTitle()}</h1><span class="sp"></span><div class="seg" role="group" aria-label="Vy">${seg}</div>
+    <h1>${deskTitle()}</h1><span class="sp"></span>${searchForm()}<span class="sp"></span><div class="seg" role="group" aria-label="Vy">${seg}</div>
     <button class="icon" data-act="settings" aria-label="Inställningar" title="Inställningar">${I.gearS}</button></header>
     ${banners()}${content}
   </main></div>`;
