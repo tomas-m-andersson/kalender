@@ -347,6 +347,12 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .fin:focus,.fin:focus-visible{outline:none;background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .fdt input:focus,.fdt input:focus-visible,.fsel:focus,.fsel:focus-visible{outline:none;box-shadow:inset 0 0 0 1.5px var(--accent)}
 .sform input:focus-visible,.lockf input:focus-visible{outline:none}
+@keyframes inR{from{transform:translateX(44px);opacity:0}to{transform:none;opacity:1}}
+@keyframes inL{from{transform:translateX(-44px);opacity:0}to{transform:none;opacity:1}}
+.in-r{animation:inR .22s ease-out}
+.in-l{animation:inL .22s ease-out}
+.grab{padding:0;box-sizing:content-box;border-top:10px solid transparent;border-bottom:10px solid transparent;background-clip:padding-box;margin:-10px auto 6px}
+@media (prefers-reduced-motion:reduce){.in-r,.in-l{animation:none}}
 </style>
 </head>
 <body>
@@ -1328,6 +1334,11 @@ function render() {
   const qa = document.activeElement && document.activeElement.id === 'q' ? document.activeElement.value : null;
   app.innerHTML = `<div class="bar${S.loading + S.saving > 0 ? ' on' : ''}"></div>` + (S.desk ? deskView() : mobileView()) + sheet();
   if (qa !== null) { const q = document.getElementById('q'); if (q) { q.value = qa; q.focus(); } }
+  if (S.slide) {
+    const el = app.querySelector(curView() === 'day' ? '.tl' : '.grid');
+    if (el) el.classList.add(S.slide > 0 ? 'in-r' : 'in-l');
+    S.slide = 0;
+  }
   const sh = app.querySelector('.sheet');
   if (sh) { if (hadSheet) sh.scrollTop = sheetKeep; else sh.focus({ preventScroll: true }); }
   S._lastSheet = S.sheet;
@@ -1348,6 +1359,16 @@ function render() {
 
 /* ---------- klick och tangenter ---------- */
 function selectDay(d) { S.sel = d; S.month = firstOfMonth(d); }
+/* ett steg framåt (1) eller bakåt (-1) i den vy som visas */
+function stepView(k) {
+  const cv = curView(), t = today0();
+  if (cv === 'day') selectDay(addDays(S.sel, k));
+  else if (cv === 'week') selectDay(addDays(S.sel, 7 * k));
+  else {
+    S.month = new Date(S.month.getFullYear(), S.month.getMonth() + k, 1);
+    S.sel = (t.getFullYear() === S.month.getFullYear() && t.getMonth() === S.month.getMonth()) ? t : S.month;
+  }
+}
 document.addEventListener('click', ev => {
   const el = ev.target.closest('[data-act]');
   if (!el) return;
@@ -1367,16 +1388,7 @@ document.addEventListener('click', ev => {
     case 'mprev': case 'mnext': S.month = new Date(S.month.getFullYear(), S.month.getMonth() + (a === 'mnext' ? 1 : -1), 1); render(); break;
     case 'openday': S.view = 'day'; S.scrollDay = true; render(); break;
     case 'today': selectDay(t); if (S.view === 'search') S.view = S.backView; if (S.view !== 'month') S.scrollDay = true; render(); break;
-    case 'prev': case 'next': {
-      const k = a === 'next' ? 1 : -1;
-      if (cv === 'day') selectDay(addDays(S.sel, k));
-      else if (cv === 'week') selectDay(addDays(S.sel, 7 * k));
-      else {
-        S.month = new Date(S.month.getFullYear(), S.month.getMonth() + k, 1);
-        S.sel = (t.getFullYear() === S.month.getFullYear() && t.getMonth() === S.month.getMonth()) ? t : S.month;
-      }
-      render(); break;
-    }
+    case 'prev': case 'next': stepView(a === 'next' ? 1 : -1); render(); break;
     case 'setview': S.view = el.dataset.v; if (S.view === 'month') S.month = firstOfMonth(S.sel); else S.scrollDay = true; render(); break;
     case 'back': S.view = S.backView === 'search' ? 'month' : S.backView; S.scrollDay = true; render(); break;
     case 'tab':
@@ -1461,6 +1473,72 @@ document.addEventListener('submit', ev => {
   else if (f.dataset.form === 'event') submitEvent(f);
   else if (f.dataset.form === 'cal') submitCal(f);
 });
+/* ---------- svep och dra (mobil) ---------- */
+let sw = null;
+function closeSheet() { S.sheet = null; S.form = null; S.calForm = null; render(); }
+document.addEventListener('touchstart', ev => {
+  sw = null;
+  if (S.desk || S.mode !== 'app' || ev.touches.length !== 1) return;
+  const t = ev.touches[0], sh = ev.target.closest('.sheet');
+  if (sh) {
+    if ((sh.scrollTop > 2 && !ev.target.closest('.grab')) || ev.target.closest('textarea')) return;
+    sw = { kind: 'sheet', el: sh, x: t.clientX, y: t.clientY, t: Date.now(), dir: null, d: 0 };
+    return;
+  }
+  if (S.sheet) return;
+  const cv = curView();
+  const area = cv === 'month' ? ev.target.closest('.grid, .mhead') : cv === 'day' ? ev.target.closest('.tl, .strip, .dayhead') : null;
+  if (!area) return;
+  sw = { kind: 'page', el: document.querySelector(cv === 'day' ? '.tl' : '.grid'), x: t.clientX, y: t.clientY, t: Date.now(), dir: null, d: 0 };
+}, { passive: true });
+document.addEventListener('touchmove', ev => {
+  if (!sw) return;
+  const t = ev.touches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y;
+  if (!sw.dir) {
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    sw.dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+    if (sw.kind === 'sheet' && (sw.dir !== 'v' || dy < 0)) { sw = null; return; }
+    if (sw.kind === 'page' && sw.dir !== 'h') { sw = null; return; }
+  }
+  ev.preventDefault();
+  if (sw.kind === 'sheet') {
+    sw.d = Math.max(0, dy);
+    sw.el.style.animation = 'none'; sw.el.style.transition = 'none';
+    sw.el.style.transform = `translateY(${sw.d}px)`;
+    const sc = document.querySelector('.scrim'); if (sc) sc.style.opacity = String(Math.max(0, 1 - sw.d / 400));
+  } else if (sw.el) {
+    sw.d = dx;
+    sw.el.style.transition = 'none';
+    sw.el.style.transform = `translateX(${dx * 0.6}px)`;
+    sw.el.style.opacity = String(1 - Math.min(0.5, Math.abs(dx) / 600));
+  }
+}, { passive: false });
+function swipeEnd() {
+  if (!sw) return;
+  const s0 = sw, dt = Math.max(1, Date.now() - s0.t); sw = null;
+  if (!s0.dir) return;
+  const sc = document.querySelector('.scrim');
+  if (s0.kind === 'sheet') {
+    if (s0.d > 110 || (s0.d > 40 && s0.d / dt > 0.6)) {
+      s0.el.style.transition = 'transform .18s ease-in'; s0.el.style.transform = 'translateY(100%)';
+      if (sc) { sc.style.transition = 'opacity .18s'; sc.style.opacity = '0'; }
+      setTimeout(closeSheet, 170);
+    } else {
+      s0.el.style.transition = 'transform .2s ease-out'; s0.el.style.transform = '';
+      if (sc) { sc.style.transition = 'opacity .2s'; sc.style.opacity = ''; }
+    }
+    return;
+  }
+  const dx = s0.d;
+  if (Math.abs(dx) > 70 || (Math.abs(dx) > 30 && Math.abs(dx) / dt > 0.5)) {
+    const k = dx < 0 ? 1 : -1;
+    stepView(k); S.slide = k; render();
+  } else if (s0.el) {
+    s0.el.style.transition = 'transform .2s ease-out, opacity .2s'; s0.el.style.transform = ''; s0.el.style.opacity = '';
+  }
+}
+document.addEventListener('touchend', swipeEnd);
+document.addEventListener('touchcancel', swipeEnd);
 document.addEventListener('keydown', ev => {
   if (ev.key === 'Escape' && S.sheet) { S.sheet = null; S.form = null; S.calForm = null; render(); }
 });
