@@ -232,6 +232,46 @@ a{color:var(--accent)}
   .sheet{left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-50%);width:460px;max-width:calc(100vw - 32px);border-radius:20px;padding:24px;max-height:85vh}
   .grab{display:none}
 }
+[hidden]{display:none!important}
+/* formulär */
+.form{display:flex;flex-direction:column;gap:12px}
+.form h2{margin-bottom:4px}
+.fgroup{background:var(--card);border-radius:14px;overflow:hidden;border:0;margin:0;padding:0;min-width:0}
+.frow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:6px 10px 6px 14px;border-top:1px solid var(--line)}
+.fgroup>.frow:first-child{border-top:0}
+.frow>label,.frow>span:first-child{font-size:16px}
+.fin{display:block;width:100%;border:0;background:transparent;color:var(--fg);font:inherit;font-size:16px;padding:0 14px;height:52px;outline-offset:-2px}
+.fin::placeholder{color:var(--faint)}
+.fin.title{font-size:19px;font-weight:600;height:58px}
+.fin.sep{border-top:1px solid var(--line)}
+textarea.fin{height:auto;padding:12px 14px;resize:vertical;min-height:84px;line-height:1.45}
+.fdt{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.fdt input,.fsel{height:40px;border-radius:10px;border:1px solid var(--line2);background:var(--bg);color:var(--fg);font:inherit;font-size:15px;padding:0 8px;min-width:0}
+.form.ad .tm{display:none}
+.tsw{appearance:none;-webkit-appearance:none;width:50px;height:30px;border-radius:15px;background:var(--line2);position:relative;cursor:pointer;flex:none;margin:0;transition:background .15s}
+.tsw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s}
+.tsw:checked{background:var(--accent)}
+.tsw:checked::after{left:23px}
+.tsw:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cpick{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px}
+.cpick label{position:relative;display:block}
+.cpick input,.swatches input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;width:100%;height:100%}
+.cpick span{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--line2);font-size:15px;font-weight:600;background:var(--bg)}
+.cpick span i{width:10px;height:10px;border-radius:5px;background:var(--c)}
+.cpick input:checked+span{background:var(--c);border-color:var(--c);color:var(--t,#fff)}
+.cpick input:checked+span i{background:var(--t,#fff)}
+.cpick input:focus-visible+span,.swatches input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.swatches{display:flex;gap:12px;flex-wrap:wrap;padding:14px}
+.swatches label{position:relative;width:40px;height:40px}
+.swatches span{display:block;width:40px;height:40px;border-radius:20px;background:var(--c)}
+.swatches input:checked+span{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--fg)}
+.ferr{color:var(--sun);font-size:15px;margin:0;font-weight:600}
+.btn.danger{border:1px solid var(--sun);color:var(--sun)}
+.calline{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--line)}
+.calline .calrow{border-bottom:0;flex:1;min-width:0}
+.smallbtn{min-height:44px;padding:0 4px;font-size:15px;font-weight:600;color:var(--accent);border-radius:10px}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+.bigmsg{font-size:17px;line-height:1.5;margin:10px 0 18px}
 </style>
 </head>
 <body>
@@ -241,11 +281,14 @@ a{color:var(--accent)}
 /* =====================================================================
    KLISTRA IN DITT KLIENT-ID HÄR (mellan apostroferna).
    Det ser ut ungefär så här: 123456789-abc123.apps.googleusercontent.com
+   Det behövs bara för att kunna importera från Google Kalender.
    ===================================================================== */
 const CLIENT_ID = '565697046213-fgdvirngrtei527ct4ml66r06rdok3vh.apps.googleusercontent.com';
 
-/* GitHub-kontot som får låsa upp sidan */
+/* GitHub-kontot som äger kalendern, och var datafilen ligger */
 const GITHUB_USER = 'tomas-m-andersson';
+const DATA_REPO = 'kalender-data';
+const DATA_FILE = 'kalender.json';
 
 /* ---------- Inget nedanför behöver ändras ---------- */
 const SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
@@ -255,6 +298,8 @@ const MONTHS_SHORT = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt
 const DAYS = ['söndag','måndag','tisdag','onsdag','torsdag','fredag','lördag'];
 const DAYS_SHORT = ['sön','mån','tis','ons','tor','fre','lör'];
 const EVENT_COLORS = {1:'#7986CB',2:'#33B679',3:'#8E24AA',4:'#E67C73',5:'#F6BF26',6:'#F4511E',7:'#039BE5',8:'#616161',9:'#3F51B5',10:'#0B8043',11:'#D50000'};
+const PALETTE = ['#2450D8','#1F7A66','#C2570C','#B4232C','#7B3FA0','#0E7490','#A16207','#4B5563'];
+const REP = { '': 'Aldrig', d: 'Varje dag', w: 'Varje vecka', '2w': 'Varannan vecka', m: 'Varje månad', y: 'Varje år' };
 
 const today0 = () => sod(new Date());
 const deskMQ = window.matchMedia('(min-width: 1024px)');
@@ -262,12 +307,12 @@ const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
 const S = {
   mode: 'start', view: 'month', backView: 'month', demo: false, desk: deskMQ.matches,
   sel: today0(), month: firstOfMonth(new Date()),
-  token: null, tokenExp: 0, needAuth: false,
-  calendars: [], events: new Map(), loaded: new Set(),
-  loading: 0, error: '', lastFetch: 0, addedAt: 0,
-  sheet: null, scrollDay: false, theme: 'auto',
-  lockErr: '', lockBusy: false, installPrompt: null,
-  search: { q: '', results: null, busy: false }
+  data: null, sha: null, base: [], byId: new Map(), calendars: [],
+  loading: 0, saving: 0, dirty: false, error: '', lastFetch: 0,
+  sheet: null, cur: null, form: null, calForm: null, imp: null,
+  scrollDay: false, theme: 'auto', lockErr: '', lockBusy: false, installPrompt: null,
+  gToken: null, gTokenExp: 0,
+  search: { q: '', results: null }
 };
 
 /* ---------- hjälpfunktioner ---------- */
@@ -291,24 +336,33 @@ const pad = n => String(n).padStart(2, '0');
 const hm = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
 const ymd = d => d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
 const dash = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-const mkey = d => d.getFullYear() + '-' + pad(d.getMonth() + 1);
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function parseDate(s) { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
-function calName(id) { const c = S.calendars.find(x => x.id === id); return c ? c.name : ''; }
+function parseLocal(s) {
+  if (!s) return null;
+  if (s.length <= 10) return parseDate(s);
+  const [d, t] = s.split('T'); const p = d.split('-').map(Number), q = t.split(':').map(Number);
+  return new Date(p[0], p[1] - 1, p[2], q[0] || 0, q[1] || 0);
+}
+const fmtLocal = (d, allDay) => allDay ? dash(d) : dash(d) + 'T' + hm(d);
+function calById(id) { return S.calendars.find(x => x.id === id); }
+function calName(id) { const c = calById(id); return c ? c.name : ''; }
 function dayLabel(d) { return cap(DAYS[d.getDay()]) + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; }
+function onColor(hex) { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#fff'; const n = parseInt(m[1], 16), l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; return l > 0.6 ? '#16181D' : '#fff'; }
 function tint(c, p) { return `color-mix(in srgb, ${esc(c)} ${p || 24}%, var(--bg))`; }
-/* vilken vy som faktiskt visas (mobilen har ingen veckovy) */
 function curView() { return !S.desk && S.view === 'week' ? 'day' : S.view; }
+let idSeq = 0;
+function newId(p) { return (p || 'e') + Date.now().toString(36) + (idSeq++).toString(36) + Math.random().toString(36).slice(2, 5); }
+function b64enc(str) { const bytes = new TextEncoder().encode(str); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+function b64dec(b64) { const bin = atob(b64.replace(/\s/g, '')); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
+function cleanDesc(s) { return (s || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').slice(0, 2000); }
 
 const sv = (p, w) => `<svg width="${w || 22}" height="${w || 22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const I = {
-  prev: sv('<path d="M15 18l-6-6 6-6"/>'),
-  next: sv('<path d="M9 18l6-6-6-6"/>'),
-  prevS: sv('<path d="M15 18l-6-6 6-6"/>', 18),
-  nextS: sv('<path d="M9 18l6-6-6-6"/>', 18),
-  plus: sv('<path d="M12 5v14M5 12h14"/>', 26),
-  plusS: sv('<path d="M12 5v14M5 12h14"/>', 20),
+  prev: sv('<path d="M15 18l-6-6 6-6"/>'), next: sv('<path d="M9 18l6-6-6-6"/>'),
+  prevS: sv('<path d="M15 18l-6-6 6-6"/>', 18), nextS: sv('<path d="M9 18l6-6-6-6"/>', 18),
+  plus: sv('<path d="M12 5v14M5 12h14"/>', 26), plusS: sv('<path d="M12 5v14M5 12h14"/>', 20),
   month: sv('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/>', 24),
   day: sv('<path d="M4 6h16M4 12h16M4 18h10"/>', 24),
   search: sv('<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', 24),
@@ -319,6 +373,7 @@ const I = {
   clock: sv('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 20),
   pin: sv('<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>', 20),
   cal: sv('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/>', 20),
+  rep: sv('<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>', 20),
   calB: sv('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/>', 26),
   check: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>',
   big: sv('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/><circle cx="8" cy="14" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="16" cy="14" r="1"/>', 56),
@@ -335,7 +390,207 @@ function applyTheme() {
 }
 function setTheme(t) { S.theme = t; store.set('kal_theme', t); applyTheme(); render(); }
 
-/* ---------- GitHub-lås ---------- */
+/* =====================================================================
+   DATA: kalender.json i det privata repot på GitHub
+   ===================================================================== */
+function ghTok() { return store.get('kal_gh', ''); }
+function contentsPath() { return `/repos/${GITHUB_USER}/${DATA_REPO}/contents/${DATA_FILE}`; }
+function gh(path, opts) {
+  opts = opts || {};
+  return fetch('https://api.github.com' + path, {
+    method: opts.method || 'GET', body: opts.body, cache: 'no-store',
+    headers: Object.assign({ Authorization: 'Bearer ' + ghTok(), Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, opts.headers || {})
+  });
+}
+function emptyData() {
+  return { version: 1, calendars: [{ id: 'c_egen', name: 'Min kalender', color: '#2450D8' }], events: [], updated: new Date().toISOString() };
+}
+function normalize(d) {
+  if (!d || typeof d !== 'object') d = emptyData();
+  if (!Array.isArray(d.calendars) || !d.calendars.length) d.calendars = emptyData().calendars;
+  if (!Array.isArray(d.events)) d.events = [];
+  d.version = 1;
+  return d;
+}
+async function loadData() {
+  const r = await gh(contentsPath());
+  if (r.status === 401) throw new Error('ghauth');
+  if (r.status === 404) {
+    const rr = await gh(`/repos/${GITHUB_USER}/${DATA_REPO}`);
+    if (rr.status === 404 || rr.status === 403) throw new Error('norepo');
+    if (rr.status === 401) throw new Error('ghauth');
+    return { data: emptyData(), sha: null };
+  }
+  if (!r.ok) throw new Error('GitHub ' + r.status);
+  const j = await r.json();
+  let text;
+  if (j.content) text = b64dec(j.content);
+  else { const raw = await gh(contentsPath(), { headers: { Accept: 'application/vnd.github.raw' } }); text = await raw.text(); }
+  return { data: normalize(JSON.parse(text || '{}')), sha: j.sha };
+}
+async function putData(msg) {
+  const body = { message: msg, content: b64enc(JSON.stringify(S.data, null, 2)) };
+  if (S.sha) body.sha = S.sha;
+  const r = await gh(contentsPath(), { method: 'PUT', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
+  if (r.status === 409 || r.status === 422) throw new Error('conflict');
+  if (r.status === 401) throw new Error('ghauth');
+  if (r.status === 404 || r.status === 403) throw new Error('nowrite');
+  if (!r.ok) throw new Error('GitHub ' + r.status);
+  const j = await r.json();
+  S.sha = j.content && j.content.sha;
+}
+function cacheLocal() { if (!S.demo) store.set('kal_cache', { data: S.data, sha: S.sha }); }
+function saveErrText(e) {
+  const m = String(e && e.message);
+  if (m === 'nowrite') return 'Din GitHub-token får inte skriva i repot kalender-data. Ge den rättigheten "Contents: Read and write".';
+  if (m === 'ghauth') return 'GitHub godkände inte din token.';
+  if (m.indexOf('GitHub') === 0) return 'GitHub svarade med fel (' + m.replace('GitHub ', '') + ').';
+  return 'Kunde inte nå GitHub.';
+}
+/* Gör en ändring: visas direkt, sparas sedan till GitHub. Krockar det (någon annan enhet hann spara)
+   hämtas senaste filen och ändringen görs om på den. */
+async function mutate(fn, msg) {
+  fn(S.data); S.data.updated = new Date().toISOString();
+  rebuild(); cacheLocal(); render();
+  if (S.demo) return true;
+  S.saving++; render();
+  try {
+    try { await putData('Kalender: ' + msg); }
+    catch (e) {
+      if (e.message !== 'conflict') throw e;
+      const fresh = await loadData();
+      S.data = fresh.data; S.sha = fresh.sha; fn(S.data); S.data.updated = new Date().toISOString();
+      rebuild(); await putData('Kalender: ' + msg);
+    }
+    S.dirty = false; cacheLocal(); return true;
+  } catch (e) {
+    S.dirty = true; S.error = 'Ändringen är inte sparad på GitHub. ' + saveErrText(e);
+    return false;
+  } finally { S.saving--; render(); }
+}
+async function retrySave() {
+  S.saving++; S.error = ''; render();
+  try {
+    const r = await gh(contentsPath());
+    if (r.ok) { const j = await r.json(); S.sha = j.sha; } else if (r.status === 404) S.sha = null;
+    await putData('Kalender: sparar ändringar');
+    S.dirty = false; cacheLocal();
+  } catch (e) { S.error = 'Det gick fortfarande inte att spara. ' + saveErrText(e); }
+  finally { S.saving--; render(); }
+}
+async function sync() {
+  S.loading++; render();
+  try {
+    const r = await loadData();
+    if (!S.dirty) { S.data = r.data; S.sha = r.sha; cacheLocal(); rebuild(); }
+    S.lastFetch = Date.now();
+    if (S.mode !== 'app') S.mode = 'app';
+  } catch (e) {
+    const m = e.message;
+    if (m === 'norepo') S.mode = 'norepo';
+    else if (m === 'ghauth') { lockPage('GitHub godkände inte din token längre. Klistra in en ny.'); }
+    else if (S.mode !== 'app') S.mode = 'neterr';
+    else S.error = 'Kunde inte hämta från GitHub. Du ser det som senast sparades på den här enheten.';
+  } finally { S.loading--; render(); }
+}
+function rebuild() {
+  const vis = store.get('kal_vis', {});
+  S.calendars = S.data.calendars.map(c => Object.assign({}, c, { on: vis[c.id] !== false }));
+  S.byId = new Map();
+  S.base = S.data.events.map(raw => {
+    const allDay = !!raw.allDay;
+    const start = parseLocal(raw.start);
+    let end = parseLocal(raw.end);
+    if (!start) return null;
+    if (!end || !(end > start)) end = allDay ? addDays(start, 1) : new Date(start.getTime() + 3600000);
+    const e = { id: raw.id, cal: raw.cal, title: raw.title || '(Ingen titel)', location: raw.location || '', desc: raw.desc || '', allDay, start, end, rep: raw.rep && REP[raw.rep.f] && raw.rep.f ? raw.rep : null, ex: new Set(raw.ex || []), color: raw.color || '', gid: raw.gid || '' };
+    S.byId.set(e.id, e);
+    return e;
+  }).filter(Boolean);
+}
+
+/* ---------- upprepning ---------- */
+function stepDate(d, f, k) {
+  const H = d.getHours(), M = d.getMinutes();
+  if (f === 'd') return new Date(d.getFullYear(), d.getMonth(), d.getDate() + k, H, M);
+  if (f === 'w') return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7 * k, H, M);
+  if (f === '2w') return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 14 * k, H, M);
+  if (f === 'm') { const x = new Date(d.getFullYear(), d.getMonth() + k, d.getDate(), H, M); return x.getDate() === d.getDate() ? x : null; }
+  const x = new Date(d.getFullYear() + k, d.getMonth(), d.getDate(), H, M); return x.getDate() === d.getDate() ? x : null;
+}
+function unitsBetween(a, b, f) {
+  const days = Math.round((sod(b) - sod(a)) / 86400000);
+  if (f === 'd') return days; if (f === 'w') return Math.floor(days / 7); if (f === '2w') return Math.floor(days / 14);
+  const months = (b.getFullYear() - a.getFullYear()) * 12 + b.getMonth() - a.getMonth();
+  return f === 'm' ? months : Math.floor(months / 12);
+}
+function colorOf(e) { const c = calById(e.cal); return e.color || (c ? c.color : '#2450D8'); }
+function inst(e, s, en, occ) { return { base: e, id: e.id, cal: e.cal, title: e.title, location: e.location, desc: e.desc, allDay: e.allDay, start: s, end: en, occ, color: colorOf(e) }; }
+function occurrences(e, from, to) {
+  if (!e.rep) return (e.start < to && e.end > from) ? [inst(e, e.start, e.end, null)] : [];
+  const dur = e.end - e.start, out = [];
+  const until = e.rep.until ? addDays(parseDate(e.rep.until), 1) : null;
+  const lookFrom = new Date(from.getTime() - dur);
+  let k = lookFrom > e.start ? Math.max(0, unitsBetween(e.start, lookFrom, e.rep.f) - 1) : 0;
+  for (let guard = 0; guard < 500; guard++, k++) {
+    const s = stepDate(e.start, e.rep.f, k);
+    if (!s) continue;
+    if (s >= to || (until && s >= until)) break;
+    const en = new Date(s.getTime() + dur);
+    if (en > from && !e.ex.has(dash(s))) out.push(inst(e, s, en, dash(s)));
+  }
+  return out;
+}
+function eventsOn(day) {
+  const a = sod(day), b = addDays(a, 1), out = [];
+  const vis = new Set(S.calendars.filter(c => c.on).map(c => c.id));
+  for (const e of S.base) if (vis.has(e.cal)) out.push(...occurrences(e, a, b));
+  out.sort((x, y) => (coversDay(y, day) - coversDay(x, day)) || (x.start - y.start) || x.title.localeCompare(y.title, 'sv'));
+  return out;
+}
+function coversDay(e, day) { return e.allDay || (e.start <= sod(day) && e.end >= addDays(sod(day), 1)); }
+function getInst(id, occ) {
+  const b = S.byId.get(id); if (!b) return null;
+  if (!occ) return inst(b, b.start, b.end, null);
+  const d = parseDate(occ), s = new Date(d.getFullYear(), d.getMonth(), d.getDate(), b.start.getHours(), b.start.getMinutes());
+  return inst(b, s, new Date(s.getTime() + (b.end - b.start)), occ);
+}
+function repText(b) {
+  if (!b.rep) return '';
+  return REP[b.rep.f] + (b.rep.until ? ' till och med ' + parseDate(b.rep.until).getDate() + ' ' + MONTHS[parseDate(b.rep.until).getMonth()] + ' ' + parseDate(b.rep.until).getFullYear() : '');
+}
+
+/* ---------- exempeldata (sparas inte) ---------- */
+function demoData() {
+  const d = { version: 1, calendars: [
+    { id: 'f', name: 'Familj', color: '#1F7A66' }, { id: 'j', name: 'Jobb', color: '#2450D8' }, { id: 'l', name: 'Fritid', color: '#C2570C' }
+  ], events: [] };
+  const t = today0(), ws = mondayOf(t);
+  const ev = (cal, title, day, h1, h2, loc, rep) => {
+    const s = new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(h1), Math.round((h1 % 1) * 60));
+    const e = new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(h2), Math.round((h2 % 1) * 60));
+    const o = { id: newId(), cal, title, start: fmtLocal(s), end: fmtLocal(e), allDay: false };
+    if (loc) o.location = loc; if (rep) o.rep = { f: rep, until: '' };
+    d.events.push(o);
+  };
+  const start = addDays(ws, -56);
+  ev('f', 'Fotbollsträning', addDays(start, 1), 17.5, 19, 'Idrottsplatsen', 'w');
+  ev('f', 'Fotbollsträning', addDays(start, 3), 17.5, 19, 'Idrottsplatsen', 'w');
+  ev('j', 'Lunch med Anna', addDays(start, 2), 12, 13, 'Café Linnea', '2w');
+  ev('l', 'Fredagsmys', addDays(start, 4), 19, 21, '', 'w');
+  ev('l', 'Frisör', t, 10, 10.75, 'Salong Klipp');
+  ev('j', 'Ringa skolan', t, 12.5, 13);
+  ev('f', 'Föräldramöte', addDays(t, 1), 19, 20.5, 'Skolan, aulan');
+  ev('f', 'Tandläkare', addDays(t, 6), 8.5, 9.25, 'Folktandvården');
+  ev('l', 'Middag med vänner', addDays(t, 9), 18, 21, 'Hemma hos Sara');
+  ev('l', 'Kalas', addDays(ws, 12), 14, 16, 'Lekland');
+  d.events.push({ id: newId(), cal: 'f', title: 'Morfar fyller år', start: dash(addDays(t, 4)), end: dash(addDays(t, 5)), allDay: true, rep: { f: 'y', until: '' } });
+  return d;
+}
+
+/* =====================================================================
+   GITHUB-LÅS
+   ===================================================================== */
 async function checkGh(tok) {
   const r = await fetch('https://api.github.com/user', { headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json' } });
   if (r.status === 401 || r.status === 403) return false;
@@ -351,194 +606,276 @@ async function unlock(tok) {
   } catch (e) { S.lockErr = 'Kunde inte nå GitHub. Kontrollera internetanslutningen och försök igen.'; }
   S.lockBusy = false; render();
 }
-function lockPage() {
-  store.del('kal_gh'); S.sheet = null; S.lockErr = ''; S.mode = 'lock'; render();
+function lockPage(msg) {
+  store.del('kal_gh'); store.del('kal_cache');
+  S.data = null; S.sheet = null; S.lockErr = msg || ''; S.mode = 'lock'; render();
 }
 
-/* ---------- Google-inloggning ---------- */
+/* =====================================================================
+   GOOGLE – bara för import
+   ===================================================================== */
 let tokenClient = null;
 function hasClientId() { return /\.apps\.googleusercontent\.com$/.test(CLIENT_ID.trim()); }
 function gisLoaded() {
   if (!hasClientId()) return;
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID.trim(), scope: SCOPE, callback: onToken, error_callback: onTokenError
-  });
-}
-function signIn() {
-  if (!tokenClient) {
-    S.error = 'Googles inloggning har inte laddats. Vänta några sekunder och försök igen. Om det inte hjälper: stäng av Brave Shields för den här sidan (lejonikonen i adressfältet).';
-    render(); return;
-  }
-  S.error = '';
-  tokenClient.requestAccessToken({ prompt: store.get('kal_connected', false) ? '' : 'consent' });
+  tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID.trim(), scope: SCOPE, callback: onToken, error_callback: onTokenError });
 }
 function onToken(resp) {
-  if (resp.error) { S.error = 'Inloggningen misslyckades (' + resp.error + ').'; render(); return; }
-  S.token = resp.access_token;
-  S.tokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
-  store.set('kal_token', { v: S.token, exp: S.tokenExp });
-  store.set('kal_connected', true);
-  S.error = '';
-  startApp();
+  if (resp.error) { S.imp = { step: 'err', msg: 'Inloggningen hos Google misslyckades (' + resp.error + ').' }; render(); return; }
+  S.gToken = resp.access_token; S.gTokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
+  store.set('kal_gconnected', true);
+  if (S.sheet === 'import') impLoadCals();
 }
 function onTokenError(err) {
-  S.error = err && err.type === 'popup_closed'
-    ? 'Inloggningsrutan stängdes innan du var klar. Försök igen.'
-    : 'Inloggningsrutan kunde inte öppnas. Tillåt popup-fönster för sidan och försök igen.';
+  S.imp = { step: 'err', msg: err && err.type === 'popup_closed' ? 'Inloggningsrutan stängdes innan du var klar.' : 'Inloggningsrutan kunde inte öppnas. Tillåt popup-fönster för sidan och försök igen.' };
   render();
 }
-function logout() {
-  try { if (S.token && window.google) google.accounts.oauth2.revoke(S.token, () => {}); } catch (e) {}
-  store.del('kal_token'); store.del('kal_connected');
-  S.token = null; S.calendars = []; S.events.clear(); S.loaded.clear();
-  S.sheet = null; S.needAuth = false; S.mode = 'login'; render();
-}
-
-/* ---------- hämta data från Google ---------- */
-async function api(path, params) {
-  if (!S.token || Date.now() > S.tokenExp - 30000) throw new Error('auth');
+async function gapi(path, params) {
+  if (!S.gToken || Date.now() > S.gTokenExp - 30000) throw new Error('auth');
   const u = new URL('https://www.googleapis.com/calendar/v3' + path);
   Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, v));
-  const r = await fetch(u, { headers: { Authorization: 'Bearer ' + S.token } });
-  if (r.status === 401) { store.del('kal_token'); throw new Error('auth'); }
+  const r = await fetch(u, { headers: { Authorization: 'Bearer ' + S.gToken } });
+  if (r.status === 401) throw new Error('auth');
   if (!r.ok) throw new Error('HTTP ' + r.status);
   return r.json();
 }
-async function loadCalendars() {
-  const r = await api('/users/me/calendarList', { maxResults: '250' });
-  const vis = store.get('kal_vis', {});
-  S.calendars = (r.items || []).map(c => ({
-    id: c.id,
-    name: c.summaryOverride || c.summary || c.id,
-    color: c.backgroundColor || '#2450D8',
-    primary: !!c.primary,
-    on: c.id in vis ? !!vis[c.id] : !!(c.selected || c.primary)
-  })).sort((a, b) => (b.primary - a.primary) || a.name.localeCompare(b.name, 'sv'));
+function gErr(e) {
+  const m = String(e && e.message);
+  if (m === 'auth') return 'Inloggningen hos Google har gått ut. Försök igen.';
+  if (m === 'HTTP 403') return 'Google nekade åtkomst. Kontrollera att Google Calendar API är aktiverat i ditt Google Cloud-projekt.';
+  if (m.indexOf('HTTP') === 0) return 'Google svarade med fel (' + m + ').';
+  return 'Kunde inte nå Google. Kontrollera internetanslutningen.';
 }
-function addEvent(it, c) {
+function impStart() {
+  if (S.demo) { S.imp = { step: 'err', msg: 'Import fungerar inte i exempelläget.' }; render(); return; }
+  if (S.gToken && Date.now() < S.gTokenExp - 60000) { impLoadCals(); return; }
+  if (!tokenClient) { S.imp = { step: 'err', msg: 'Googles inloggning har inte laddats. Vänta några sekunder och försök igen. Hjälper det inte: stäng av Brave Shields för sidan (lejonikonen i adressfältet).' }; render(); return; }
+  tokenClient.requestAccessToken({ prompt: store.get('kal_gconnected', false) ? '' : 'consent' });
+}
+async function impLoadCals() {
+  S.imp = { step: 'busy', msg: 'Hämtar dina kalendrar från Google…' }; render();
+  try {
+    const r = await gapi('/users/me/calendarList', { maxResults: '250' });
+    const cals = (r.items || []).map(c => ({ id: c.id, name: c.summaryOverride || c.summary || c.id, color: c.backgroundColor || '#2450D8', on: !!(c.selected || c.primary), primary: !!c.primary }))
+      .sort((a, b) => (b.primary - a.primary) || a.name.localeCompare(b.name, 'sv'));
+    S.imp = { step: 'pick', cals };
+  } catch (e) { S.imp = { step: 'err', msg: gErr(e) }; }
+  render();
+}
+function gToRaw(it, gcalId) {
   if (!it || it.status === 'cancelled' || !it.start) return null;
   const allDay = !!it.start.date;
-  const start = allDay ? parseDate(it.start.date) : new Date(it.start.dateTime);
-  let end = it.end ? (allDay ? parseDate(it.end.date) : new Date(it.end.dateTime)) : null;
-  if (!end || !(end > start)) end = allDay ? addDays(start, 1) : new Date(start.getTime() + 60000);
-  const desc = (it.description || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').slice(0, 2000);
-  const e = {
-    id: c.id + '|' + it.id, cal: c.id, title: it.summary || '(Ingen titel)',
-    location: it.location || '', desc, allDay, start, end,
-    color: (it.colorId && EVENT_COLORS[it.colorId]) || c.color, link: it.htmlLink || ''
-  };
-  S.events.set(e.id, e);
-  return e;
-}
-async function loadCal(c, from, to) {
-  let pageToken = null;
-  do {
-    const p = { timeMin: from.toISOString(), timeMax: to.toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '250' };
-    if (pageToken) p.pageToken = pageToken;
-    const r = await api('/calendars/' + encodeURIComponent(c.id) + '/events', p);
-    (r.items || []).forEach(it => addEvent(it, c));
-    pageToken = r.nextPageToken;
-  } while (pageToken);
-}
-async function ensureMonth(d) {
-  const k = mkey(d);
-  if (S.loaded.has(k)) return;
-  S.loaded.add(k);
-  const from = addDays(firstOfMonth(d), -7);
-  const to = addDays(new Date(d.getFullYear(), d.getMonth() + 1, 1), 14);
-  if (S.demo) { addDemo(from, to); return; }
-  S.loading++; render();
-  try {
-    await Promise.all(S.calendars.map(c => loadCal(c, from, to)));
-    S.lastFetch = Date.now();
-  } catch (err) { S.loaded.delete(k); handleErr(err); }
-  finally { S.loading--; }
-}
-async function loadVisible() {
-  if (S.needAuth) return;
-  const ws = mondayOf(S.sel);
-  const keys = new Set([mkey(S.month), mkey(S.sel), mkey(ws), mkey(addDays(ws, 6))]);
-  for (const k of keys) {
-    const p = k.split('-').map(Number);
-    await ensureMonth(new Date(p[0], p[1] - 1, 1));
-    if (S.needAuth) break;
+  let start, end;
+  if (allDay) { start = it.start.date; end = (it.end && it.end.date) || dash(addDays(parseDate(start), 1)); }
+  else {
+    const s = new Date(it.start.dateTime);
+    let e = it.end && it.end.dateTime ? new Date(it.end.dateTime) : new Date(s.getTime() + 3600000);
+    if (!(e > s)) e = new Date(s.getTime() + 60000);
+    start = fmtLocal(s); end = fmtLocal(e);
   }
-  render();
+  const raw = { id: newId(), gid: gcalId + '|' + it.id, title: it.summary || '(Ingen titel)', start, end, allDay };
+  if (it.location) raw.location = it.location;
+  const d = cleanDesc(it.description); if (d) raw.desc = d;
+  if (it.colorId && EVENT_COLORS[it.colorId]) raw.color = EVENT_COLORS[it.colorId];
+  return raw;
 }
-function refresh() { S.events.clear(); S.loaded.clear(); S.error = ''; return loadVisible(); }
-function handleErr(err) {
-  const m = String((err && err.message) || err);
-  if (m === 'auth') { S.needAuth = true; S.token = null; }
-  else if (m === 'HTTP 403') S.error = 'Google nekade åtkomst (403). Kontrollera att Google Calendar API är aktiverat i ditt Google Cloud-projekt.';
-  else if (m.indexOf('HTTP') === 0) S.error = 'Kunde inte hämta kalendern (' + m + '). Försök igen om en stund.';
-  else S.error = 'Kunde inte nå Google. Kontrollera internetanslutningen.';
-  render();
-}
-async function startApp() {
-  S.mode = 'app'; S.needAuth = false; S.events.clear(); S.loaded.clear();
+async function impFetch() {
+  const chosen = S.imp.cals.filter(c => c.on);
+  if (!chosen.length) return;
+  const cals = S.imp.cals;
+  S.imp = { step: 'busy', msg: 'Hämtar händelser från Google…', cals };
   render();
   try {
-    if (S.demo) setupDemo();
-    else if (!S.calendars.length) {
-      S.loading++; render();
-      try { await loadCalendars(); } finally { S.loading--; }
+    const t = today0(), from = addDays(t, -365), to = addDays(t, 730);
+    const have = new Set(S.data.events.map(e => e.gid).filter(Boolean));
+    const items = []; let skipped = 0;
+    for (const c of chosen) {
+      let pageToken = null;
+      do {
+        const p = { timeMin: from.toISOString(), timeMax: to.toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '250' };
+        if (pageToken) p.pageToken = pageToken;
+        const r = await gapi('/calendars/' + encodeURIComponent(c.id) + '/events', p);
+        (r.items || []).forEach(it => {
+          const raw = gToRaw(it, c.id); if (!raw) return;
+          if (have.has(raw.gid)) { skipped++; return; }
+          have.add(raw.gid); raw._g = c; items.push(raw);
+        });
+        pageToken = r.nextPageToken;
+      } while (pageToken);
     }
-    await loadVisible();
-  } catch (err) { handleErr(err); }
+    S.imp = { step: 'confirm', cals, chosen, items, skipped };
+  } catch (e) { S.imp = { step: 'err', msg: gErr(e) }; }
+  render();
 }
-
-/* ---------- exempeldata ---------- */
-function setupDemo() {
-  S.calendars = [
-    { id: 'f', name: 'Familj', color: '#1F7A66', on: true, primary: true },
-    { id: 'j', name: 'Jobb', color: '#2F5BD3', on: true },
-    { id: 'l', name: 'Fritid', color: '#C2570C', on: true }
-  ];
-}
-function addDemo(from, to) {
-  const t = today0();
-  for (let d = sod(from); d < to; d = addDays(d, 1)) {
-    const wd = d.getDay(), n = d.getDate();
-    const add = (cal, title, h1, h2, loc) => {
-      const s = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(h1), Math.round((h1 % 1) * 60));
-      const e = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(h2), Math.round((h2 % 1) * 60));
-      const c = S.calendars.find(x => x.id === cal);
-      const id = 'demo|' + ymd(d) + '|' + title;
-      S.events.set(id, { id, cal, title, location: loc || '', desc: '', allDay: false, start: s, end: e, color: c.color, link: '' });
-    };
-    const allDay = (cal, title, days) => {
-      const c = S.calendars.find(x => x.id === cal);
-      const id = 'demo|' + ymd(d) + '|' + title;
-      S.events.set(id, { id, cal, title, location: '', desc: '', allDay: true, start: d, end: addDays(d, days || 1), color: c.color, link: '' });
-    };
-    if (wd === 2 || wd === 4) add('f', 'Fotbollsträning', 17.5, 19, 'Idrottsplatsen');
-    if (wd === 1 && n <= 7) add('j', 'Månadsmöte', 9, 10, 'Teams');
-    if (wd === 3) add('j', 'Lunch med Anna', 12, 13, 'Café Linnea');
-    if (wd === 5) add('l', 'Fredagsmys', 19, 21);
-    if (n === 12) add('f', 'Tandläkare', 8.5, 9.25, 'Folktandvården');
-    if (n === 18) add('l', 'Middag med vänner', 18, 21, 'Hemma hos Sara');
-    if (n === 25) allDay('f', 'Morfar fyller år');
-    if (wd === 6 && n > 21) add('l', 'Kalas', 14, 16, 'Lekland');
-    if (sameDay(d, t)) { add('l', 'Frisör', 10, 10.75, 'Salong Klipp'); add('j', 'Ringa skolan', 12.5, 13); }
-    if (sameDay(d, addDays(t, 1))) add('f', 'Föräldramöte', 19, 20.5, 'Skolan, aulan');
+async function impSave() {
+  const { items, chosen } = S.imp;
+  const n = items.length;
+  S.imp = { step: 'busy', msg: 'Sparar ' + n + ' händelser i din datafil…' }; render();
+  const ok = await mutate(d => {
+    const map = {};
+    chosen.forEach(gc => {
+      let own = d.calendars.find(c => c.gcal === gc.id);
+      if (!own) { own = { id: newId('c'), name: gc.name, color: gc.color, gcal: gc.id }; d.calendars.push(own); }
+      map[gc.id] = own.id;
+    });
+    const have = new Set(d.events.map(e => e.gid).filter(Boolean));
+    items.forEach(raw => {
+      if (have.has(raw.gid)) return;
+      const o = Object.assign({}, raw, { cal: map[raw._g.id] }); delete o._g;
+      d.events.push(o);
+    });
+  }, 'import från Google Kalender (' + n + ' händelser)');
+  S.imp = ok ? { step: 'done', n } : { step: 'err', msg: S.error || 'Det gick inte att spara.' };
+  if (ok) {
+    try { if (window.google && S.gToken) google.accounts.oauth2.revoke(S.gToken, () => {}); } catch (e) {}
+    S.gToken = null;
   }
-}
-function exitDemo() {
-  S.demo = false; S.calendars = []; S.events.clear(); S.loaded.clear(); S.sheet = null; S.error = '';
-  try { history.replaceState(null, '', location.pathname); } catch (e) {}
-  boot();
+  render();
 }
 
-/* ---------- vilka händelser finns en viss dag ---------- */
-function eventsOn(day) {
-  const a = sod(day), b = addDays(a, 1);
-  const vis = new Set(S.calendars.filter(c => c.on).map(c => c.id));
-  const out = [];
-  S.events.forEach(e => { if (vis.has(e.cal) && e.start < b && e.end > a) out.push(e); });
-  out.sort((x, y) => (coversDay(y, day) - coversDay(x, day)) || (x.start - y.start) || x.title.localeCompare(y.title, 'sv'));
-  return out;
+/* =====================================================================
+   FORMULÄR: ny / ändra händelse, kalendrar
+   ===================================================================== */
+function openForm(b, occ, day, hour) {
+  if (b) {
+    const endShown = b.allDay ? addDays(b.end, -1) : b.end;
+    S.form = { id: b.id, title: b.title, allDay: b.allDay, sd: dash(b.start), st: hm(b.start), ed: dash(endShown), et: hm(b.end), rep: b.rep ? b.rep.f : '', until: (b.rep && b.rep.until) || '', location: b.location, cal: b.cal, desc: b.desc, occ: occ || null, isRep: !!b.rep, err: '', del: false };
+  } else {
+    const d = day || S.sel, n = new Date();
+    let h = hour != null ? hour : (sameDay(d, n) ? Math.min(23, n.getHours() + 1) : 9);
+    const last = store.get('kal_lastcal', '');
+    const cal = (calById(last) && last) || (S.calendars[0] && S.calendars[0].id);
+    S.form = { id: null, title: '', allDay: false, sd: dash(d), st: pad(h) + ':00', ed: dash(d), et: h >= 23 ? '23:59' : pad(h + 1) + ':00', rep: '', until: '', location: '', cal, desc: '', occ: null, isRep: false, err: '', del: false };
+  }
+  S.sheet = 'form'; render();
+  setTimeout(() => { const t = document.getElementById('f-title'); if (t && !S.form.id) t.focus(); }, 60);
 }
-function coversDay(e, day) { return e.allDay || (e.start <= sod(day) && e.end >= addDays(sod(day), 1)); }
+function formSheet() {
+  const f = S.form;
+  const reps = Object.keys(REP).map(k => `<option value="${k}"${f.rep === k ? ' selected' : ''}>${REP[k]}</option>`).join('');
+  const cals = S.calendars.map(c => `<label style="--c:${esc(c.color)};--t:${onColor(c.color)}"><input type="radio" name="cal" value="${esc(c.id)}"${f.cal === c.id ? ' checked' : ''}><span><i></i>${esc(c.name)}</span></label>`).join('');
+  let del = '';
+  if (f.id) {
+    if (!f.del) del = '<button type="button" class="btn danger" data-act="askdel">Ta bort händelsen</button>';
+    else {
+      const occD = f.occ ? parseDate(f.occ) : null;
+      del = `<p class="ferr" role="alert">Är du säker? Det går inte att ångra.</p>` +
+        (f.isRep && occD ? `<button type="button" class="btn danger" data-act="delone">Ta bort bara ${occD.getDate()} ${MONTHS[occD.getMonth()]}</button><button type="button" class="btn danger" data-act="delall">Ta bort alla upprepningar</button>` : '<button type="button" class="btn danger" data-act="delall">Ja, ta bort</button>') +
+        '<button type="button" class="btn ghost" data-act="nodel">Nej, behåll den</button>';
+    }
+  }
+  return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sht" tabindex="-1"><div class="grab"></div>
+  <form class="form${f.allDay ? ' ad' : ''}" data-form="event" novalidate>
+    <h2 id="sht">${f.id ? 'Ändra händelse' : 'Ny händelse'}</h2>
+    <div class="fgroup">
+      <label for="f-title" class="sr">Titel</label><input class="fin title" id="f-title" name="title" value="${esc(f.title)}" placeholder="Vad ska hända?" autocomplete="off">
+      <label for="f-loc" class="sr">Plats</label><input class="fin sep" id="f-loc" name="location" value="${esc(f.location)}" placeholder="Plats (valfritt)" autocomplete="off">
+    </div>
+    <div class="fgroup">
+      <div class="frow"><label for="f-ad">Heldag</label><input type="checkbox" class="tsw" id="f-ad" name="allDay"${f.allDay ? ' checked' : ''}></div>
+      <div class="frow"><span id="l-s">Börjar</span><span class="fdt"><input type="date" name="sd" value="${f.sd}" aria-label="Startdatum" required><input class="tm" type="time" name="st" value="${f.st}" aria-label="Starttid"></span></div>
+      <div class="frow"><span id="l-e">Slutar</span><span class="fdt"><input type="date" name="ed" value="${f.ed}" aria-label="Slutdatum" required><input class="tm" type="time" name="et" value="${f.et}" aria-label="Sluttid"></span></div>
+    </div>
+    <div class="fgroup">
+      <div class="frow"><label for="f-rep">Upprepa</label><select class="fsel" id="f-rep" name="rep">${reps}</select></div>
+      <div class="frow repu"${f.rep ? '' : ' hidden'}><label for="f-until">Till och med</label><input type="date" class="fsel" id="f-until" name="until" value="${f.until}"></div>
+    </div>
+    <fieldset class="fgroup"><legend class="sr">Kalender</legend><div class="cpick">${cals}</div></fieldset>
+    <div class="fgroup"><label for="f-desc" class="sr">Anteckning</label><textarea class="fin" id="f-desc" name="desc" rows="3" placeholder="Anteckning (valfritt)">${esc(f.desc)}</textarea></div>
+    ${f.err ? `<p class="ferr" role="alert">${esc(f.err)}</p>` : ''}
+    ${f.id && f.isRep ? '<p class="note">Ändringar gäller alla upprepningar.</p>' : ''}
+    <div class="btns"><button type="submit" class="btn primary">Spara</button><button type="button" class="btn ghost" data-act="close">Avbryt</button>${del}</div>
+  </form></div>`;
+}
+function readForm(form) {
+  const f = S.form;
+  ['title', 'location', 'sd', 'st', 'ed', 'et', 'rep', 'until', 'desc'].forEach(n => { if (form.elements[n]) f[n] = form.elements[n].value; });
+  f.allDay = form.elements.allDay.checked;
+  const c = form.querySelector('input[name="cal"]:checked'); if (c) f.cal = c.value;
+}
+function submitEvent(form) {
+  readForm(form);
+  const f = S.form, title = f.title.trim();
+  const bad = m => { f.err = m; render(); };
+  if (!title) return bad('Skriv vad som ska hända.');
+  if (!f.sd || !f.ed) return bad('Fyll i datum.');
+  if (!f.cal) return bad('Välj en kalender.');
+  let start, end;
+  if (f.allDay) {
+    if (parseDate(f.ed) < parseDate(f.sd)) return bad('Slutdatumet kan inte vara före startdatumet.');
+    start = f.sd; end = dash(addDays(parseDate(f.ed), 1));
+  } else {
+    if (!f.st || !f.et) return bad('Fyll i klockslag.');
+    start = f.sd + 'T' + f.st; end = f.ed + 'T' + f.et;
+    if (!(parseLocal(end) > parseLocal(start))) return bad('Sluttiden måste vara efter starttiden.');
+  }
+  if (f.rep && f.until && parseDate(f.until) < parseDate(f.sd)) return bad('"Till och med" måste vara efter startdatumet.');
+  const id = f.id || newId(), isNew = !f.id;
+  const fields = { id, cal: f.cal, title, start, end, allDay: f.allDay };
+  if (f.location.trim()) fields.location = f.location.trim();
+  if (f.desc.trim()) fields.desc = f.desc.trim();
+  if (f.rep) fields.rep = { f: f.rep, until: f.until || '' };
+  store.set('kal_lastcal', f.cal);
+  S.sheet = null; S.form = null;
+  selectDay(parseDate(f.sd));
+  mutate(d => {
+    const i = d.events.findIndex(x => x.id === id);
+    if (i >= 0) {
+      const keep = {}; ['gid', 'ex', 'color'].forEach(k => { if (d.events[i][k] != null) keep[k] = d.events[i][k]; });
+      d.events[i] = Object.assign(keep, fields);
+    } else d.events.push(fields);
+  }, (isNew ? 'ny händelse ' : 'ändrar ') + '"' + title + '"');
+}
+function deleteEvent(onlyOcc) {
+  const f = S.form, id = f.id, occ = f.occ, title = f.title;
+  S.sheet = null; S.form = null;
+  mutate(d => {
+    if (onlyOcc && occ) {
+      const e = d.events.find(x => x.id === id);
+      if (e) { e.ex = Array.from(new Set((e.ex || []).concat([occ]))); }
+    } else d.events = d.events.filter(x => x.id !== id);
+  }, (onlyOcc ? 'tar bort ett tillfälle av ' : 'tar bort ') + '"' + title + '"');
+}
+function openCalForm(id) {
+  const c = id ? calById(id) : null;
+  S.calForm = c ? { id: c.id, name: c.name, color: c.color, del: false, err: '' } : { id: null, name: '', color: PALETTE[(S.calendars.length) % PALETTE.length], del: false, err: '' };
+  S.sheet = 'cal'; render();
+  setTimeout(() => { const t = document.getElementById('c-name'); if (t) t.focus(); }, 60);
+}
+function calSheet() {
+  const f = S.calForm;
+  const sw = PALETTE.map((c, i) => `<label style="--c:${c}"><input type="radio" name="color" value="${c}"${f.color.toLowerCase() === c.toLowerCase() ? ' checked' : ''} aria-label="Färg ${i + 1}"><span></span></label>`).join('');
+  const count = f.id ? S.data.events.filter(e => e.cal === f.id).length : 0;
+  let del = '';
+  if (f.id && S.calendars.length > 1) {
+    del = !f.del ? '<button type="button" class="btn danger" data-act="askdelcal">Ta bort kalendern</button>'
+      : `<p class="ferr" role="alert">Det här tar bort kalendern och dess ${count} ${count === 1 ? 'händelse' : 'händelser'}. Det går inte att ångra.</p><button type="button" class="btn danger" data-act="delcal">Ja, ta bort allt</button><button type="button" class="btn ghost" data-act="nodelcal">Nej, behåll</button>`;
+  }
+  return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sht" tabindex="-1"><div class="grab"></div>
+  <form class="form" data-form="cal" novalidate>
+    <h2 id="sht">${f.id ? 'Ändra kalender' : 'Ny kalender'}</h2>
+    <div class="fgroup"><label for="c-name" class="sr">Namn</label><input class="fin title" id="c-name" name="name" value="${esc(f.name)}" placeholder="Namn, t.ex. Familj" autocomplete="off"></div>
+    <fieldset class="fgroup"><legend class="sr">Färg</legend><div class="swatches">${sw}</div></fieldset>
+    ${f.err ? `<p class="ferr" role="alert">${esc(f.err)}</p>` : ''}
+    <div class="btns"><button type="submit" class="btn primary">Spara</button><button type="button" class="btn ghost" data-act="settings">Avbryt</button>${del}</div>
+  </form></div>`;
+}
+function submitCal(form) {
+  const f = S.calForm;
+  f.name = form.elements.name.value.trim();
+  const c = form.querySelector('input[name="color"]:checked'); if (c) f.color = c.value;
+  if (!f.name) { f.err = 'Skriv ett namn.'; render(); return; }
+  const id = f.id || newId('c'), name = f.name, color = f.color, isNew = !f.id;
+  S.sheet = 'settings'; S.calForm = null;
+  mutate(d => {
+    const x = d.calendars.find(k => k.id === id);
+    if (x) { x.name = name; x.color = color; } else d.calendars.push({ id, name, color });
+  }, (isNew ? 'ny kalender ' : 'ändrar kalender ') + '"' + name + '"');
+}
+
+/* =====================================================================
+   VISNING
+   ===================================================================== */
 function layout(evs, day) {
   const d0 = sod(day).getTime();
   const items = evs.map(e => ({ e, s: Math.max(0, (e.start - d0) / 3600000), en: Math.min(24, (e.end - d0) / 3600000) }))
@@ -561,12 +898,12 @@ function layout(evs, day) {
   if (cluster.length) flush();
   return out;
 }
-/* ett händelseblock i tidslinjen; L = startposition, W = tillgänglig bredd */
+const oAttr = e => `data-id="${esc(e.id)}"${e.occ ? ` data-o="${e.occ}"` : ''}`;
 function blockHtml(it, L, W) {
   const e = it.e, top = it.s * HOUR + PAD + 1, h = Math.max(22, (it.en - it.s) * HOUR - 2), tall = h >= 40;
   const left = `calc(${L} + (${W}) * ${it.col} / ${it.ncol})`, width = `calc((${W}) / ${it.ncol} - 3px)`;
   const info = tall ? hm(e.start) + '–' + hm(e.end) + (e.location ? ' · ' + e.location : '') : hm(e.start);
-  return `<button class="blk" data-act="open" data-id="${esc(e.id)}" style="top:${top}px;height:${h}px;left:${left};width:${width};background:${tint(e.color)};box-shadow:inset 0 0 0 1px color-mix(in srgb, ${esc(e.color)} 45%, transparent);${tall ? '' : 'flex-direction:row;align-items:center;gap:6px;padding:0 8px;'}"><b>${esc(e.title)}</b><span>${esc(info)}</span></button>`;
+  return `<button class="blk" data-act="open" ${oAttr(e)} style="top:${top}px;height:${h}px;left:${left};width:${width};background:${tint(e.color)};box-shadow:inset 0 0 0 1px color-mix(in srgb, ${esc(e.color)} 45%, transparent);${tall ? '' : 'flex-direction:row;align-items:center;gap:6px;padding:0 8px;'}"><b>${esc(e.title)}</b><span>${esc(info)}</span></button>`;
 }
 function hourLines() {
   let h = '';
@@ -574,13 +911,11 @@ function hourLines() {
   return h;
 }
 function nowTop() { const n = new Date(); return (n.getHours() + n.getMinutes() / 60) * HOUR + PAD; }
-
-/* ---------- gemensamma bitar ---------- */
 function banners() {
   let h = '';
-  if (S.demo) h += `<div class="banner"><span style="flex:1"><b>Exempeldata</b>Påhittade händelser – inte din riktiga kalender.</span><button data-act="exitdemo">Avsluta</button></div>`;
-  if (S.needAuth) h += `<div class="banner" role="alert"><span style="flex:1"><b>Inloggningen har gått ut</b>Google kräver ny inloggning efter en timme.</span><button data-act="signin">Hämta igen</button></div>`;
-  if (S.error) h += `<div class="banner" role="alert"><span style="flex:1">${esc(S.error)}</span><button data-act="dismiss">OK</button></div>`;
+  if (S.demo) h += `<div class="banner"><span style="flex:1"><b>Exempeldata</b>Påhittade händelser – inget sparas.</span><button data-act="exitdemo">Avsluta</button></div>`;
+  if (S.dirty) h += `<div class="banner" role="alert"><span style="flex:1"><b>Inte sparat på GitHub</b>${esc(S.error.replace('Ändringen är inte sparad på GitHub. ', ''))}</span><button data-act="retrysave"${S.saving ? ' disabled' : ''}>${S.saving ? 'Sparar…' : 'Försök igen'}</button></div>`;
+  else if (S.error) h += `<div class="banner" role="alert"><span style="flex:1">${esc(S.error)}</span><button data-act="dismiss">OK</button></div>`;
   return h;
 }
 function timeCol(e, day) {
@@ -591,47 +926,36 @@ function timeCol(e, day) {
 function evRow(e, day) {
   const t = timeCol(e, day);
   const sub = [e.location, calName(e.cal)].filter(Boolean).join(' · ');
-  return `<button class="ev" data-act="open" data-id="${esc(e.id)}"><span class="t"><b>${t[0]}</b><span>${t[1]}</span></span><i class="d" style="background:${esc(e.color)}"></i><span class="x"><b>${esc(e.title)}</b><span>${esc(sub)}</span></span></button>`;
+  return `<button class="ev" data-act="open" ${oAttr(e)}><span class="t"><b>${t[0]}</b><span>${t[1]}</span></span><i class="d" style="background:${esc(e.color)}"></i><span class="x"><b>${esc(e.title)}</b><span>${esc(sub)}</span></span></button>`;
 }
 function srow(e) {
   const y = e.start.getFullYear() !== new Date().getFullYear() ? ' ' + e.start.getFullYear() : '';
   const date = DAYS_SHORT[e.start.getDay()] + ' ' + e.start.getDate() + ' ' + MONTHS_SHORT[e.start.getMonth()] + y;
-  const sub = [e.location, calName(e.cal)].filter(Boolean).join(' · ');
-  return `<button class="ev wide" data-act="open" data-id="${esc(e.id)}"><span class="t"><b>${date}</b><span>${e.allDay ? 'Heldag' : hm(e.start)}</span></span><i class="d" style="background:${esc(e.color)}"></i><span class="x"><b>${esc(e.title)}</b><span>${esc(sub)}</span></span></button>`;
+  const sub = [e.base.rep ? REP[e.base.rep.f] : '', e.location, calName(e.cal)].filter(Boolean).join(' · ');
+  return `<button class="ev wide" data-act="open" ${oAttr(e)}><span class="t"><b>${date}</b><span>${e.allDay ? 'Heldag' : hm(e.start)}</span></span><i class="d" style="background:${esc(e.color)}"></i><span class="x"><b>${esc(e.title)}</b><span>${esc(sub)}</span></span></button>`;
+}
+function doSearch(q) {
+  if (S.view !== 'search') S.backView = S.view;
+  S.view = 'search';
+  const ql = q.toLowerCase(), t = today0();
+  const vis = new Set(S.calendars.filter(c => c.on).map(c => c.id));
+  const res = S.base.filter(b => vis.has(b.cal) && (b.title + ' ' + b.location + ' ' + b.desc).toLowerCase().indexOf(ql) >= 0)
+    .map(b => (b.rep && (occurrences(b, t, addDays(t, 800))[0])) || inst(b, b.start, b.end, null));
+  S.search = { q, results: res.sort((a, b) => a.start - b.start) };
+  render();
 }
 function searchBody() {
   const r = S.search;
-  if (r.busy) return '<p class="empty">Söker…</p>';
-  if (!r.results) return '<p class="empty">Sök på titel eller plats. Jag letar ett år bakåt och ett år framåt.</p>';
+  if (!r.results) return '<p class="empty">Sök på titel, plats eller anteckning.</p>';
   if (!r.results.length) return `<p class="empty">Hittade inget som matchar ”${esc(r.q)}”.</p>`;
   const n = new Date(), up = r.results.filter(e => e.end >= n), past = r.results.filter(e => e.end < n).reverse();
   let b = '';
-  if (up.length) b += '<h2 class="sec">KOMMANDE</h2>' + up.map(srow).join('');
-  if (past.length) b += '<h2 class="sec">TIDIGARE</h2>' + past.slice(0, 30).map(srow).join('');
+  if (up.length) b += '<h2 class="sec">KOMMANDE</h2>' + up.slice(0, 100).map(srow).join('');
+  if (past.length) b += '<h2 class="sec">TIDIGARE</h2>' + past.slice(0, 50).map(srow).join('');
   return b;
 }
-function searchForm(cls) {
-  return `<form class="sform ${cls || ''}" data-form="search" role="search"><label for="q" class="sr">Sök händelse</label><input id="q" name="q" type="search" value="${esc(S.search.q)}" placeholder="Sök händelse" enterkeyhint="search" autocomplete="off"><button type="submit">Sök</button></form>`;
-}
-async function doSearch(q) {
-  if (S.view !== 'search') S.backView = S.view;
-  S.view = 'search';
-  S.search = { q, results: null, busy: true }; render();
-  let res = [];
-  try {
-    const ql = q.toLowerCase();
-    if (S.demo) {
-      res = [...S.events.values()].filter(e => (e.title + ' ' + e.location).toLowerCase().indexOf(ql) >= 0);
-    } else {
-      const t = today0(), from = addDays(t, -365), to = addDays(t, 365), found = new Map();
-      await Promise.all(S.calendars.filter(c => c.on).map(async c => {
-        const r = await api('/calendars/' + encodeURIComponent(c.id) + '/events', { q, timeMin: from.toISOString(), timeMax: to.toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '100' });
-        (r.items || []).forEach(it => { const e = addEvent(it, c); if (e) found.set(e.id, e); });
-      }));
-      res = [...found.values()];
-    }
-  } catch (err) { handleErr(err); }
-  S.search = { q, results: res.sort((a, b) => a.start - b.start), busy: false }; render();
+function searchForm() {
+  return `<form class="sform" data-form="search" role="search"><label for="q" class="sr">Sök händelse</label><input id="q" name="q" type="search" value="${esc(S.search.q)}" placeholder="Sök händelse" enterkeyhint="search" autocomplete="off"><button type="submit">Sök</button></form>`;
 }
 function whenText(e) {
   if (e.allDay) {
@@ -642,64 +966,79 @@ function whenText(e) {
   if (endsSameDay) return dayLabel(e.start) + ' · ' + hm(e.start) + '–' + hm(e.end);
   return dayLabel(e.start) + ' ' + hm(e.start) + ' – ' + dayLabel(e.end).toLowerCase() + ' ' + hm(e.end);
 }
-function addUrl() {
-  const d = S.sel, n = new Date();
-  let s = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 9, 0);
-  if (sameDay(d, n)) s = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.min(23, n.getHours() + 1), 0);
-  const e = new Date(s.getTime() + 3600000);
-  const f = x => ymd(x) + 'T' + pad(x.getHours()) + pad(x.getMinutes()) + '00';
-  let tz = 'Europe/Stockholm';
-  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (er) {}
-  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&dates=' + f(s) + '/' + f(e) + '&ctz=' + encodeURIComponent(tz);
-}
-function sheet() {
-  if (!S.sheet) return '';
-  if (S.sheet === 'settings') {
-    const th = [['auto', 'Auto'], ['light', 'Ljust'], ['dark', 'Mörkt']].map(t => `<button data-act="settheme" data-v="${t[0]}" aria-pressed="${S.theme === t[0]}">${t[1]}</button>`).join('');
-    const rows = S.calendars.map(c => `<button class="calrow" role="switch" aria-checked="${c.on}" data-act="togglecal" data-id="${esc(c.id)}"><i style="width:14px;height:14px;border-radius:4px;background:${esc(c.color)};flex:none"></i><span style="flex:1;min-width:0;font-size:16px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span><span class="switch"><i></i></span></button>`).join('');
-    const install = S.installPrompt ? '<button class="btn ghost" data-act="install">Installera som app</button>' : '';
-    const acct = S.demo
-      ? '<button class="btn ghost" data-act="exitdemo">Avsluta exempelläget</button>'
-      : '<button class="btn ghost" data-act="logout">Logga ut från Google</button><button class="btn ghost" data-act="lock">Lås sidan (glöm GitHub-token)</button>';
-    return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sht" tabindex="-1"><div class="grab"></div>
-    <h2 id="sht">Inställningar</h2>
+function scrim() { return '<div class="scrim" data-act="close"></div>'; }
+function dlg(inner) { return `${scrim()}<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sht" tabindex="-1"><div class="grab"></div>${inner}</div>`; }
+function settingsSheet() {
+  const th = [['auto', 'Auto'], ['light', 'Ljust'], ['dark', 'Mörkt']].map(t => `<button data-act="settheme" data-v="${t[0]}" aria-pressed="${S.theme === t[0]}">${t[1]}</button>`).join('');
+  const rows = S.calendars.map(c => `<div class="calline"><button class="calrow" role="switch" aria-checked="${c.on}" data-act="togglecal" data-id="${esc(c.id)}" aria-label="Visa ${esc(c.name)}"><i style="width:14px;height:14px;border-radius:4px;background:${esc(c.color)};flex:none"></i><span style="flex:1;min-width:0;font-size:16px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span><span class="switch"><i></i></span></button><button class="smallbtn" data-act="editcal" data-id="${esc(c.id)}" aria-label="Ändra ${esc(c.name)}">Ändra</button></div>`).join('');
+  const install = S.installPrompt ? '<button class="btn ghost" data-act="install">Installera som app</button>' : '';
+  const when = S.lastFetch ? 'Senast hämtad ' + hm(new Date(S.lastFetch)) + '.' : '';
+  return dlg(`<h2 id="sht">Inställningar</h2>
     <h3 class="shh">UTSEENDE</h3><div class="seg full" role="group" aria-label="Utseende">${th}</div>
-    <p class="muted" style="font-size:13px">Auto följer telefonens eller datorns inställning.</p>
-    <h3 class="shh">KALENDRAR SOM SYNS</h3>${rows || '<p class="muted">Inga kalendrar hittades.</p>'}
-    <div class="btns" style="margin-top:18px">${install}<button class="btn ghost" data-act="refresh">Hämta på nytt från Google</button>${acct}<button class="btn primary" data-act="close">Klar</button></div></div>`;
-  }
-  const e = S.events.get(S.sheet);
+    <p class="note">Auto följer telefonens eller datorns inställning.</p>
+    <h3 class="shh">KALENDRAR</h3>${rows}
+    <div class="btns" style="margin-top:10px"><button class="btn ghost" data-act="newcal">+ Ny kalender</button></div>
+    <h3 class="shh">GOOGLE KALENDER</h3><p class="note" style="margin-top:0">Kopiera in händelser från Google till din egen kalender. Inget ändras i Google, och sidan behöver inte Google efteråt.</p>
+    <div class="btns" style="margin-top:10px"><button class="btn ghost" data-act="import">Importera från Google Kalender</button></div>
+    <h3 class="shh">DATA</h3><p class="note" style="margin-top:0">${S.demo ? 'Exempelläget sparar ingenting.' : `Allt sparas i <b>${DATA_FILE}</b> i ditt privata repo <b>${DATA_REPO}</b> på GitHub. ${when}`}</p>
+    <div class="btns" style="margin-top:10px">${S.demo ? '' : '<button class="btn ghost" data-act="sync">Hämta på nytt från GitHub</button>'}${install}${S.demo ? '<button class="btn ghost" data-act="exitdemo">Avsluta exempelläget</button>' : '<button class="btn ghost" data-act="lock">Lås sidan (glöm GitHub-token)</button>'}<button class="btn primary" data-act="close">Klar</button></div>`);
+}
+function importSheet() {
+  const m = S.imp || { step: 'start' };
+  let body = '';
+  if (!hasClientId() && m.step === 'start') body = `<p class="bigmsg">Google-kopplingen saknar klient-ID i index.html.</p><div class="btns"><button class="btn primary" data-act="settings">Tillbaka</button></div>`;
+  else if (m.step === 'start') body = `<p class="bigmsg">Du loggar in hos Google och väljer vilka kalendrar du vill kopiera. Händelser från <b>ett år bakåt till två år framåt</b> hämtas.</p><p class="note" style="margin:-8px 0 18px">Inget ändras i Google. Händelser du redan har importerat hoppas över, så du kan importera igen senare utan dubbletter.</p><div class="btns"><button class="btn primary" data-act="impgo">Logga in hos Google</button><button class="btn ghost" data-act="settings">Avbryt</button></div>`;
+  else if (m.step === 'busy') body = `<p class="bigmsg" role="status">${esc(m.msg)}</p>`;
+  else if (m.step === 'pick') {
+    const rows = m.cals.map((c, i) => `<button class="calrow" role="checkbox" aria-checked="${c.on}" data-act="imptoggle" data-i="${i}"><i style="width:14px;height:14px;border-radius:4px;background:${esc(c.color)};flex:none"></i><span style="flex:1;min-width:0;font-size:16px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span><span class="switch"><i></i></span></button>`).join('');
+    const any = m.cals.some(c => c.on);
+    body = `<p class="muted">Välj kalendrar att kopiera:</p>${rows}<div class="btns" style="margin-top:18px"><button class="btn primary" data-act="impfetch"${any ? '' : ' disabled'}>Hämta händelser</button><button class="btn ghost" data-act="settings">Avbryt</button></div>`;
+  } else if (m.step === 'confirm') {
+    const n = m.items.length;
+    body = n
+      ? `<p class="bigmsg">Hittade <b>${n} nya ${n === 1 ? 'händelse' : 'händelser'}</b>${m.skipped ? ` (${m.skipped} fanns redan och hoppas över)` : ''}.</p><p class="note" style="margin:-8px 0 18px">De läggs till i din datafil ${DATA_FILE} på GitHub. Varje Google-kalender blir en egen kalender här.</p><div class="btns"><button class="btn primary" data-act="impsave">Lägg till ${n} ${n === 1 ? 'händelse' : 'händelser'}</button><button class="btn ghost" data-act="settings">Avbryt</button></div>`
+      : `<p class="bigmsg">Inget nytt att importera${m.skipped ? ` – alla ${m.skipped} händelser finns redan` : ''}.</p><div class="btns"><button class="btn primary" data-act="close">Stäng</button></div>`;
+  } else if (m.step === 'done') body = `<p class="bigmsg">Klart! <b>${m.n} ${m.n === 1 ? 'händelse' : 'händelser'}</b> har lagts till i din kalender.</p><div class="btns"><button class="btn primary" data-act="close">Stäng</button></div>`;
+  else if (m.step === 'err') body = `<p class="bigmsg ferr" role="alert">${esc(m.msg)}</p><div class="btns"><button class="btn primary" data-act="impgo">Försök igen</button><button class="btn ghost" data-act="settings">Tillbaka</button></div>`;
+  return dlg(`<h2 id="sht">Importera från Google</h2>${body}`);
+}
+function eventSheet() {
+  const e = S.cur && getInst(S.cur.id, S.cur.occ);
   if (!e) return '';
   const loc = e.location ? `<div>${I.pin}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location)}" target="_blank" rel="noopener">${esc(e.location)}</a></div>` : '';
-  return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sht" tabindex="-1"><div class="grab"></div>
-  <div style="display:flex;gap:12px;align-items:flex-start"><i style="width:14px;height:14px;border-radius:4px;background:${esc(e.color)};flex:none;margin-top:7px"></i><h2 id="sht">${esc(e.title)}</h2></div>
-  <div class="meta"><div>${I.clock}<span>${esc(whenText(e))}</span></div>${loc}<div>${I.cal}<span>${esc(calName(e.cal))}</span></div></div>
+  const rep = e.base.rep ? `<div>${I.rep}<span>${esc(repText(e.base))}</span></div>` : '';
+  return dlg(`<div style="display:flex;gap:12px;align-items:flex-start"><i style="width:14px;height:14px;border-radius:4px;background:${esc(e.color)};flex:none;margin-top:7px"></i><h2 id="sht">${esc(e.title)}</h2></div>
+  <div class="meta"><div>${I.clock}<span>${esc(whenText(e))}</span></div>${rep}${loc}<div>${I.cal}<span>${esc(calName(e.cal))}</span></div></div>
   ${e.desc ? `<p class="desc">${esc(e.desc)}</p>` : ''}
-  <div class="btns"><button class="btn primary" data-act="gotoday" data-d="${dash(e.start)}">Visa dagen</button>${e.link ? `<a class="btn ghost" href="${esc(e.link)}" target="_blank" rel="noopener">Ändra i Google Kalender</a>` : ''}<button class="btn ghost" data-act="close">Stäng</button></div></div>`;
+  <div class="btns"><button class="btn primary" data-act="edit">Ändra</button><button class="btn ghost" data-act="gotoday" data-d="${dash(e.start)}">Visa dagen</button><button class="btn ghost" data-act="close">Stäng</button></div>`);
+}
+function sheet() {
+  if (S.sheet === 'settings') return settingsSheet();
+  if (S.sheet === 'import') return importSheet();
+  if (S.sheet === 'form' && S.form) return formSheet();
+  if (S.sheet === 'cal' && S.calForm) return calSheet();
+  if (S.sheet === 'event') return eventSheet();
+  return '';
 }
 
 /* ---------- skärmar före appen ---------- */
+function center(inner) { return `<main class="center">${inner}</main>`; }
 function viewLock() {
-  return `<main class="center">${I.lock}<h1>Låst</h1>
+  return center(`${I.lock}<h1>Låst</h1>
   <p>Klistra in din <b>GitHub-token</b> för att låsa upp kalendern. Den sparas bara i den här webbläsaren, så du behöver göra det en gång per enhet.</p>
   <form class="lockf" data-form="lock"><label for="gh" class="sr">GitHub-token</label><input id="gh" name="t" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_… eller ghp_…" required>
   <button class="btn primary" type="submit"${S.lockBusy ? ' disabled' : ''}>${S.lockBusy ? 'Kontrollerar…' : 'Lås upp'}</button></form>
-  ${S.lockErr ? `<p class="err" role="alert">${esc(S.lockErr)}</p>` : ''}</main>`;
+  ${S.lockErr ? `<p class="err" role="alert">${esc(S.lockErr)}</p>` : ''}
+  <button class="btn ghost" data-act="demo">Visa med exempeldata</button>`);
 }
-function viewSetup() {
-  return `<main class="center">${I.big}<h1>Nästan klart</h1>
-  <p>Sidan behöver ditt <b>klient-ID</b> från Google för att kunna läsa din kalender. Öppna filen <b>index.html</b> och klistra in det på raden:</p>
-  <div class="code">const CLIENT_ID = '…apps.googleusercontent.com';</div>
-  <button class="btn ghost" data-act="demo">Visa med exempeldata</button></main>`;
+function viewNoRepo() {
+  return center(`${I.big}<h1>Datafilen hittas inte</h1>
+  <p>Sidan hittar inte repot <b>${DATA_REPO}</b> på GitHub. Antingen finns det inte än, eller så har din token inte åtkomst till det.</p>
+  <p>Skapa ett <b>privat</b> repo som heter <b>${DATA_REPO}</b> och ge din token rättigheten <b>Contents: Read and write</b> för det. Tryck sedan på knappen nedan.</p>
+  <button class="btn primary" data-act="retry">Försök igen</button><button class="btn ghost" data-act="lock">Byt GitHub-token</button>`);
 }
-function viewLogin() {
-  const again = store.get('kal_connected', false);
-  return `<main class="center">${I.big}<h1>Kalender</h1>
-  <p>${again ? 'Tryck på knappen för att hämta din kalender från Google igen.' : 'Logga in med ditt Google-konto för att se din kalender här. Sidan kan bara <b>läsa</b> – den ändrar ingenting i din kalender.'}</p>
-  <button class="btn primary" data-act="signin">${again ? 'Hämta min kalender' : 'Logga in med Google'}</button>
-  <button class="btn ghost" data-act="demo">Visa med exempeldata</button>
-  ${S.error ? `<p class="err" role="alert">${esc(S.error)}</p>` : ''}</main>`;
-}
+function viewNetErr() { return center(`${I.big}<h1>Ingen kontakt</h1><p>Kunde inte nå GitHub. Kontrollera internetanslutningen.</p><button class="btn primary" data-act="retry">Försök igen</button>`); }
+function viewLoading() { return center(`${I.big}<h1>Kalender</h1><p role="status">Hämtar din kalender…</p>`); }
 
 /* ---------- MOBIL ---------- */
 function viewMonth() {
@@ -712,18 +1051,16 @@ function viewMonth() {
     const ws = addDays(start, w * 7);
     grid += `<div class="wrow"><span class="wk" aria-hidden="true">${isoWeek(ws)}</span>`;
     for (let i = 0; i < 7; i++) {
-      const d = addDays(ws, i);
-      const evs = eventsOn(d);
+      const d = addDays(ws, i), evs = eventsOn(d);
       const colors = [...new Set(evs.map(e => e.color))].slice(0, 3);
       const cls = ['day', d.getMonth() !== m.getMonth() ? 'out' : '', sameDay(d, t) ? 'today' : '', sameDay(d, S.sel) ? 'sel' : '', i === 6 ? 'sun' : ''].join(' ');
       grid += `<button class="${cls}" data-act="pick" data-d="${dash(d)}" aria-label="${dayLabel(d)}${evs.length ? ', ' + evs.length + (evs.length === 1 ? ' händelse' : ' händelser') : ''}"${sameDay(d, S.sel) ? ' aria-pressed="true"' : ''}><span class="n">${d.getDate()}</span><span class="dots">${colors.map(c => `<i style="background:${esc(c)}"></i>`).join('')}</span></button>`;
     }
     grid += '</div>';
   }
-  const evs = eventsOn(S.sel);
-  const isT = sameDay(S.sel, t);
+  const evs = eventsOn(S.sel), isT = sameDay(S.sel, t);
   const title = (isT ? 'Idag, ' + DAYS[S.sel.getDay()] : cap(DAYS[S.sel.getDay()])) + ' ' + S.sel.getDate() + ' ' + MONTHS[S.sel.getMonth()];
-  const list = evs.length ? evs.map(e => evRow(e, S.sel)).join('') : `<p class="empty">${S.loading ? 'Hämtar…' : 'Inget inplanerat den här dagen.'}</p>`;
+  const list = evs.length ? evs.map(e => evRow(e, S.sel)).join('') : `<p class="empty">Inget inplanerat den här dagen.</p>`;
   return `<div class="view">
   <header class="top"><h1>${cap(MONTHS[m.getMonth()])} <span>${m.getFullYear()}</span></h1>
   <div class="hbtns"><button class="pill" data-act="today">Idag</button><button class="icon" data-act="prev" aria-label="Föregående månad">${I.prev}</button><button class="icon" data-act="next" aria-label="Nästa månad">${I.next}</button></div></header>
@@ -738,22 +1075,17 @@ function viewDay() {
     const cls = [i === 6 ? 'sun' : '', sameDay(x, t) ? 'today' : '', sameDay(x, d) ? 'sel' : ''].join(' ');
     strip += `<button class="${cls}" data-act="pick" data-d="${dash(x)}" aria-label="${dayLabel(x)}"${sameDay(x, d) ? ' aria-pressed="true"' : ''}><span class="l">${'MTOTFLS'[i]}</span><span class="n">${x.getDate()}</span></button>`;
   }
-  const evs = eventsOn(d);
-  const all = evs.filter(e => coversDay(e, d));
-  const timed = evs.filter(e => !coversDay(e, d));
+  const evs = eventsOn(d), all = evs.filter(e => coversDay(e, d)), timed = evs.filter(e => !coversDay(e, d));
   const sub = (isT ? cap(DAYS[d.getDay()]) + ' ' : '') + d.getDate() + ' ' + MONTHS[d.getMonth()] + (d.getFullYear() !== t.getFullYear() ? ' ' + d.getFullYear() : '') + ' · vecka ' + isoWeek(d);
   const blocks = layout(timed, d).map(it => blockHtml(it, '58px', '100% - 66px')).join('');
   const now = isT ? `<div class="now" style="top:${nowTop()}px" aria-label="Nu, ${hm(new Date())}"><span>${hm(new Date())}</span><i></i><em></em></div>` : '';
-  const chips = all.length ? `<div class="allday"><span>Heldag</span>${all.map(e => `<button class="chip" data-act="open" data-id="${esc(e.id)}" style="background:${tint(e.color)}">${esc(e.title)}</button>`).join('')}</div>` : '';
-  const empty = !evs.length ? `<p class="empty" style="padding:2px 20px 10px">${S.loading ? 'Hämtar…' : 'Inget inplanerat den här dagen.'}</p>` : '';
+  const chips = all.length ? `<div class="allday"><span>Heldag</span>${all.map(e => `<button class="chip" data-act="open" ${oAttr(e)} style="background:${tint(e.color)}">${esc(e.title)}</button>`).join('')}</div>` : '';
+  const empty = !evs.length ? `<p class="empty" style="padding:2px 20px 10px">Inget inplanerat. Tryck i tidslinjen för att lägga till.</p>` : '';
   return `<div class="view"><div class="sticky">
   <header class="top"><h1>${isT ? 'Idag' : cap(DAYS[d.getDay()])}<span class="sub">${sub}</span></h1>
   <div class="hbtns"><button class="pill" data-act="today">Idag</button><button class="icon" data-act="prev" aria-label="Föregående dag">${I.prev}</button><button class="icon" data-act="next" aria-label="Nästa dag">${I.next}</button></div></header>
   <div class="strip">${strip}</div>${chips}${empty}</div>
-  <div class="tl">${hourLines()}${blocks}${now}</div></div>`;
-}
-function viewSearch() {
-  return `<div class="view"><header class="top"><h1>Sök</h1></header>${searchForm()}${searchBody()}</div>`;
+  <div class="tl" data-act="slot" data-d="${dash(d)}">${hourLines()}${blocks}${now}</div></div>`;
 }
 function tabs() {
   const cv = curView();
@@ -762,8 +1094,8 @@ function tabs() {
 }
 function mobileView() {
   const cv = curView();
-  const main = cv === 'day' ? viewDay() : cv === 'search' ? viewSearch() : viewMonth();
-  const fab = cv === 'search' ? '' : `<a class="fab" href="${esc(addUrl())}" target="_blank" rel="noopener" data-act="add" aria-label="Ny händelse (öppnas i Google Kalender)">${I.plus}</a>`;
+  const main = cv === 'day' ? viewDay() : cv === 'search' ? `<div class="view"><header class="top"><h1>Sök</h1></header>${searchForm()}${searchBody()}</div>` : viewMonth();
+  const fab = cv === 'search' ? '' : `<button class="fab" data-act="new" aria-label="Ny händelse">${I.plus}</button>`;
   return banners() + main + fab + tabs();
 }
 
@@ -798,13 +1130,12 @@ function deskMonth() {
   let cells = '';
   for (let i = 0; i < weeks * 7; i++) {
     const d = addDays(start, i), evs = eventsOn(d);
-    const shown = evs.length > max + 1 ? evs.slice(0, max) : evs;
-    const more = evs.length - shown.length;
+    const shown = evs.length > max + 1 ? evs.slice(0, max) : evs, more = evs.length - shown.length;
     const cls = ['dcell', d.getMonth() !== m.getMonth() ? 'out' : '', sameDay(d, t) ? 'today' : '', sameDay(d, S.sel) ? 'sel' : '', d.getDay() === 0 ? 'sun' : ''].join(' ');
     const num = d.getDate() === 1 ? '1 ' + MONTHS_SHORT[d.getMonth()] : d.getDate();
     const rows = shown.map(e => coversDay(e, d)
-      ? `<button class="dev" data-act="open" data-id="${esc(e.id)}" style="background:${tint(e.color)}"><b>${esc(e.title)}</b></button>`
-      : `<button class="dev" data-act="open" data-id="${esc(e.id)}"><i style="background:${esc(e.color)}"></i><span class="tm">${e.start < sod(d) ? '' : hm(e.start)}</span><b>${esc(e.title)}</b></button>`).join('');
+      ? `<button class="dev" data-act="open" ${oAttr(e)} style="background:${tint(e.color)}"><b>${esc(e.title)}</b></button>`
+      : `<button class="dev" data-act="open" ${oAttr(e)}><i style="background:${esc(e.color)}"></i><span class="tm">${e.start < sod(d) ? '' : hm(e.start)}</span><b>${esc(e.title)}</b></button>`).join('');
     cells += `<div class="${cls}" data-act="pick" data-d="${dash(d)}"><button class="dn" data-act="dayopen" data-d="${dash(d)}" aria-label="Visa ${dayLabel(d)}">${num}</button>${rows}${more ? `<button class="more" data-act="dayopen" data-d="${dash(d)}">+${more} till</button>` : ''}</div>`;
   }
   return `<div class="dmonth"><div class="dmh" aria-hidden="true"><span>Mån</span><span>Tis</span><span>Ons</span><span>Tor</span><span>Fre</span><span>Lör</span><span class="s">Sön</span></div><div class="dmg" style="grid-template-rows:repeat(${weeks},minmax(0,1fr))">${cells}</div></div>`;
@@ -814,11 +1145,11 @@ function deskTime(days) {
   const head = days.map(d => `<button class="${sameDay(d, t) ? 'today' : ''} ${d.getDay() === 0 ? 'sun' : ''}" data-act="dayopen" data-d="${dash(d)}" aria-label="Visa ${dayLabel(d)}"><span class="l">${DAYS_SHORT[d.getDay()]}</span><span class="n">${d.getDate()}</span></button>`).join('');
   const allDays = days.map(d => eventsOn(d).filter(e => coversDay(e, d)));
   const allRow = allDays.some(a => a.length)
-    ? `<div class="dwa" style="--n:${n}"><span class="lab">Heldag</span>${allDays.map(a => `<div>${a.map(e => `<button class="chip" data-act="open" data-id="${esc(e.id)}" style="background:${tint(e.color)}">${esc(e.title)}</button>`).join('')}</div>`).join('')}</div>` : '';
+    ? `<div class="dwa" style="--n:${n}"><span class="lab">Heldag</span>${allDays.map(a => `<div>${a.map(e => `<button class="chip" data-act="open" ${oAttr(e)} style="background:${tint(e.color)}">${esc(e.title)}</button>`).join('')}</div>`).join('')}</div>` : '';
   const cols = days.map(d => {
     const blocks = layout(eventsOn(d).filter(e => !coversDay(e, d)), d).map(it => blockHtml(it, '2px', '100% - 6px')).join('');
     const now = sameDay(d, t) ? `<div class="now nowc" style="top:${nowTop()}px" aria-label="Nu, ${hm(new Date())}"><i></i><em></em></div>` : '';
-    return `<div class="wcol${sameDay(d, t) ? ' today' : ''}">${blocks}${now}</div>`;
+    return `<div class="wcol${sameDay(d, t) ? ' today' : ''}" data-act="slot" data-d="${dash(d)}" title="Klicka för att lägga till">${blocks}${now}</div>`;
   }).join('');
   return `<div class="dweek"><div class="dwh" style="--n:${n}"><span></span>${head}</div>${allRow}<div class="wscroll"><div class="wgrid" style="--n:${n}">${hourLines()}<div></div>${cols}</div></div></div>`;
 }
@@ -830,10 +1161,9 @@ function deskView() {
   else content = deskMonth();
   const cals = S.calendars.map(c => `<button class="ccheck" role="checkbox" aria-checked="${c.on}" data-act="togglecal" data-id="${esc(c.id)}" style="--c:${esc(c.color)}"><span class="box">${I.check}</span><span class="nm">${esc(c.name)}</span></button>`).join('');
   const seg = [['day', 'Dag'], ['week', 'Vecka'], ['month', 'Månad']].map(v => `<button data-act="setview" data-v="${v[0]}" aria-pressed="${S.view === v[0]}">${v[1]}</button>`).join('');
-  const addBtn = `<a class="btn primary" href="${esc(addUrl())}" target="_blank" rel="noopener" data-act="add">${I.plusS}Ny händelse</a>`;
   return `<div class="desk"><aside class="side">
-    <div class="brand">${I.calB}Kalender</div>${addBtn}${miniMonth()}
-    <div><h3>KALENDRAR</h3>${cals || '<p class="muted" style="padding:0 6px">Inga kalendrar ännu.</p>'}</div>
+    <div class="brand">${I.calB}Kalender</div><button class="btn primary" data-act="new">${I.plusS}Ny händelse</button>${miniMonth()}
+    <div><h3>KALENDRAR</h3>${cals}<button class="smallbtn" style="padding:0 8px" data-act="newcal">+ Ny kalender</button></div>
   </aside><main class="dmain">
     <header class="dtop"><button class="pill" data-act="today">Idag</button><button class="icon" data-act="prev" aria-label="Föregående">${I.prev}</button><button class="icon" data-act="next" aria-label="Nästa">${I.next}</button>
     <h1>${deskTitle()}</h1><span class="sp"></span>${searchForm()}
@@ -849,16 +1179,18 @@ function render() {
   const app = document.getElementById('app');
   document.body.style.overflow = S.sheet ? 'hidden' : '';
   app.classList.toggle('wide', S.mode === 'app' && S.desk);
-  if (S.mode === 'lock') { app.innerHTML = viewLock(); return; }
-  if (S.mode === 'setup') { app.innerHTML = viewSetup(); return; }
-  if (S.mode === 'login') { app.innerHTML = viewLogin(); return; }
+  const screens = { lock: viewLock, norepo: viewNoRepo, neterr: viewNetErr, loading: viewLoading };
+  if (screens[S.mode]) { app.innerHTML = screens[S.mode](); return; }
   if (S.mode !== 'app') { app.innerHTML = ''; return; }
-  const oldWs = document.querySelector('.wscroll');
-  const keep = oldWs ? oldWs.scrollTop : null;
-  const active = document.activeElement && document.activeElement.id === 'q' ? document.activeElement.value : null;
-  app.innerHTML = `<div class="bar${S.loading > 0 ? ' on' : ''}"></div>` + (S.desk ? deskView() : mobileView()) + sheet();
-  if (active !== null) { const q = document.getElementById('q'); if (q) { q.value = active; q.focus(); } }
-  if (S.sheet) { const sh = app.querySelector('.sheet'); if (sh) sh.focus({ preventScroll: true }); }
+  const oldWs = document.querySelector('.wscroll'), keep = oldWs ? oldWs.scrollTop : null;
+  const oldSheet = document.querySelector('.sheet'), sheetKeep = oldSheet ? oldSheet.scrollTop : 0;
+  const hadSheet = S._lastSheet === S.sheet;
+  const qa = document.activeElement && document.activeElement.id === 'q' ? document.activeElement.value : null;
+  app.innerHTML = `<div class="bar${S.loading + S.saving > 0 ? ' on' : ''}"></div>` + (S.desk ? deskView() : mobileView()) + sheet();
+  if (qa !== null) { const q = document.getElementById('q'); if (q) { q.value = qa; q.focus(); } }
+  const sh = app.querySelector('.sheet');
+  if (sh) { if (hadSheet) sh.scrollTop = sheetKeep; else sh.focus({ preventScroll: true }); }
+  S._lastSheet = S.sheet;
   const n = new Date(), startH = sameDay(S.sel, n) || (S.view === 'week' && mondayOf(n).getTime() === mondayOf(S.sel).getTime()) ? Math.max(0, n.getHours() - 2) : 7;
   if (S.desk) {
     const ws = document.querySelector('.wscroll');
@@ -869,14 +1201,12 @@ function render() {
     requestAnimationFrame(() => {
       const tl = document.querySelector('.tl'), st = document.querySelector('.sticky');
       if (!tl) return;
-      const y = tl.getBoundingClientRect().top + window.scrollY + startH * HOUR - (st ? st.offsetHeight : 0);
-      window.scrollTo(0, Math.max(0, y));
+      window.scrollTo(0, Math.max(0, tl.getBoundingClientRect().top + window.scrollY + startH * HOUR - (st ? st.offsetHeight : 0)));
     });
   }
 }
 
 /* ---------- klick och tangenter ---------- */
-function go() { render(); loadVisible(); }
 function selectDay(d) { S.sel = d; S.month = firstOfMonth(d); }
 document.addEventListener('click', ev => {
   const el = ev.target.closest('[data-act]');
@@ -886,18 +1216,17 @@ document.addEventListener('click', ev => {
     case 'pick': {
       const d = parseDate(el.dataset.d);
       if (!S.desk && cv === 'month' && sameDay(d, S.sel)) { S.view = 'day'; S.scrollDay = true; }
-      selectDay(d); go(); break;
+      selectDay(d); render(); break;
     }
-    case 'dayopen': selectDay(parseDate(el.dataset.d)); S.view = 'day'; S.scrollDay = true; go(); break;
-    case 'mpick': {
+    case 'dayopen': selectDay(parseDate(el.dataset.d)); S.view = 'day'; S.scrollDay = true; render(); break;
+    case 'mpick':
       selectDay(parseDate(el.dataset.d));
       if (S.view === 'search') S.view = S.backView === 'search' ? 'month' : S.backView;
       if (S.view !== 'month') S.scrollDay = true;
-      go(); break;
-    }
-    case 'mprev': case 'mnext': S.month = new Date(S.month.getFullYear(), S.month.getMonth() + (a === 'mnext' ? 1 : -1), 1); go(); break;
-    case 'openday': S.view = 'day'; S.scrollDay = true; go(); break;
-    case 'today': selectDay(t); if (S.view === 'search') S.view = S.backView; if (S.view !== 'month') S.scrollDay = true; go(); break;
+      render(); break;
+    case 'mprev': case 'mnext': S.month = new Date(S.month.getFullYear(), S.month.getMonth() + (a === 'mnext' ? 1 : -1), 1); render(); break;
+    case 'openday': S.view = 'day'; S.scrollDay = true; render(); break;
+    case 'today': selectDay(t); if (S.view === 'search') S.view = S.backView; if (S.view !== 'month') S.scrollDay = true; render(); break;
     case 'prev': case 'next': {
       const k = a === 'next' ? 1 : -1;
       if (cv === 'day') selectDay(addDays(S.sel, k));
@@ -906,59 +1235,98 @@ document.addEventListener('click', ev => {
         S.month = new Date(S.month.getFullYear(), S.month.getMonth() + k, 1);
         S.sel = (t.getFullYear() === S.month.getFullYear() && t.getMonth() === S.month.getMonth()) ? t : S.month;
       }
-      go(); break;
+      render(); break;
     }
-    case 'setview':
-      S.view = el.dataset.v;
-      if (S.view === 'month') S.month = firstOfMonth(S.sel); else S.scrollDay = true;
-      go(); break;
-    case 'back': S.view = S.backView === 'search' ? 'month' : S.backView; S.scrollDay = true; go(); break;
+    case 'setview': S.view = el.dataset.v; if (S.view === 'month') S.month = firstOfMonth(S.sel); else S.scrollDay = true; render(); break;
+    case 'back': S.view = S.backView === 'search' ? 'month' : S.backView; S.scrollDay = true; render(); break;
     case 'tab':
       S.view = el.dataset.v; S.sheet = null;
       if (S.view === 'day') S.scrollDay = true; else window.scrollTo(0, 0);
-      go();
+      render();
       if (S.view === 'search') setTimeout(() => { const q = document.getElementById('q'); if (q && !S.search.q) q.focus(); }, 50);
       break;
-    case 'open': S.sheet = el.dataset.id; render(); break;
-    case 'close': S.sheet = null; render(); break;
-    case 'gotoday': selectDay(parseDate(el.dataset.d)); S.view = 'day'; S.sheet = null; S.scrollDay = true; go(); break;
-    case 'settings': S.sheet = 'settings'; render(); break;
+    case 'slot': {
+      const r = el.getBoundingClientRect();
+      const h = Math.max(0, Math.min(23, Math.floor((ev.clientY - r.top - PAD) / HOUR)));
+      openForm(null, null, parseDate(el.dataset.d), h); break;
+    }
+    case 'new': openForm(null, null, S.sel); break;
+    case 'open': S.cur = { id: el.dataset.id, occ: el.dataset.o || null }; S.sheet = 'event'; render(); break;
+    case 'edit': { const b = S.byId.get(S.cur.id); if (b) openForm(b, S.cur.occ); break; }
+    case 'askdel': readForm(document.querySelector('[data-form="event"]')); S.form.del = true; render(); break;
+    case 'nodel': readForm(document.querySelector('[data-form="event"]')); S.form.del = false; render(); break;
+    case 'delone': deleteEvent(true); break;
+    case 'delall': deleteEvent(false); break;
+    case 'close': S.sheet = null; S.form = null; S.calForm = null; render(); break;
+    case 'gotoday': selectDay(parseDate(el.dataset.d)); S.view = 'day'; S.sheet = null; S.scrollDay = true; render(); break;
+    case 'settings': S.sheet = 'settings'; S.calForm = null; render(); break;
     case 'settheme': setTheme(el.dataset.v); break;
     case 'toggletheme': setTheme(isDark() ? 'light' : 'dark'); break;
     case 'togglecal': {
-      const c = S.calendars.find(x => x.id === el.dataset.id);
-      if (c) { c.on = !c.on; if (!S.demo) { const vis = store.get('kal_vis', {}); vis[c.id] = c.on; store.set('kal_vis', vis); } }
+      const c = calById(el.dataset.id);
+      if (c) { c.on = !c.on; const vis = store.get('kal_vis', {}); vis[c.id] = c.on; store.set('kal_vis', vis); }
       render(); break;
     }
-    case 'install':
-      if (S.installPrompt) { S.installPrompt.prompt(); S.installPrompt.userChoice.finally(() => { S.installPrompt = null; render(); }); }
+    case 'newcal': openCalForm(null); break;
+    case 'editcal': openCalForm(el.dataset.id); break;
+    case 'askdelcal': S.calForm.name = document.getElementById('c-name').value; S.calForm.del = true; render(); break;
+    case 'nodelcal': S.calForm.del = false; render(); break;
+    case 'delcal': {
+      const id = S.calForm.id, name = S.calForm.name;
+      S.sheet = 'settings'; S.calForm = null;
+      mutate(d => { d.calendars = d.calendars.filter(c => c.id !== id); d.events = d.events.filter(e => e.cal !== id); }, 'tar bort kalendern "' + name + '"');
       break;
-    case 'refresh': S.sheet = null; render(); refresh(); break;
-    case 'logout': logout(); break;
+    }
+    case 'import': S.imp = { step: 'start' }; S.sheet = 'import'; render(); break;
+    case 'impgo': impStart(); break;
+    case 'imptoggle': { const c = S.imp.cals[+el.dataset.i]; c.on = !c.on; render(); break; }
+    case 'impfetch': impFetch(); break;
+    case 'impsave': impSave(); break;
+    case 'install': if (S.installPrompt) { S.installPrompt.prompt(); S.installPrompt.userChoice.finally(() => { S.installPrompt = null; render(); }); } break;
+    case 'sync': S.sheet = null; render(); sync(); break;
+    case 'retry': S.mode = 'loading'; render(); sync(); break;
+    case 'retrysave': retrySave(); break;
     case 'lock': lockPage(); break;
-    case 'signin': signIn(); break;
-    case 'demo': S.demo = true; S.error = ''; startApp(); break;
-    case 'exitdemo': exitDemo(); break;
+    case 'demo': S.demo = true; S.data = demoData(); S.sha = null; S.mode = 'app'; rebuild(); render(); break;
+    case 'exitdemo': S.demo = false; S.data = null; S.sheet = null; try { history.replaceState(null, '', location.pathname); } catch (e) {} boot(); break;
     case 'dismiss': S.error = ''; render(); break;
-    case 'add':
-      if (S.demo) { ev.preventDefault(); S.error = 'I exempelläget går det inte att lägga till händelser.'; render(); }
-      else S.addedAt = Date.now();
-      break;
+  }
+});
+/* håll formuläret uppdaterat medan man skriver (utan att rita om) */
+document.addEventListener('input', ev => {
+  const form = ev.target.form;
+  if (!form || form.dataset.form !== 'event' || !S.form) return;
+  const n = ev.target.name;
+  if (n === 'allDay') { S.form.allDay = ev.target.checked; form.classList.toggle('ad', ev.target.checked); }
+  if (n === 'rep') { S.form.rep = ev.target.value; form.querySelector('.repu').hidden = !ev.target.value; }
+});
+document.addEventListener('change', ev => {
+  const form = ev.target.form;
+  if (!form || form.dataset.form !== 'event') return;
+  const E = form.elements, n = ev.target.name;
+  if (n === 'sd' && E.sd.value) {
+    if (!E.ed.value || E.ed.value < E.sd.value) E.ed.value = E.sd.value;
+  }
+  if ((n === 'st' || n === 'sd') && E.st.value && E.sd.value === E.ed.value && (!E.et.value || E.et.value <= E.st.value)) {
+    const p = E.st.value.split(':').map(Number), h = Math.min(23, p[0] + 1);
+    E.et.value = p[0] >= 23 ? '23:59' : pad(h) + ':' + pad(p[1]);
   }
 });
 document.addEventListener('submit', ev => {
-  const lf = ev.target.closest('[data-form="lock"]');
-  if (lf) { ev.preventDefault(); const v = lf.t.value.trim(); if (v) unlock(v); return; }
-  const f = ev.target.closest('[data-form="search"]');
-  if (!f) return;
+  const f = ev.target;
+  if (!f.dataset || !f.dataset.form) return;
   ev.preventDefault();
-  const q = f.q.value.trim();
-  if (q) { f.q.blur(); doSearch(q); }
+  if (f.dataset.form === 'lock') { const v = f.t.value.trim(); if (v) unlock(v); }
+  else if (f.dataset.form === 'search') { const q = f.q.value.trim(); if (q) { f.q.blur(); doSearch(q); } }
+  else if (f.dataset.form === 'event') submitEvent(f);
+  else if (f.dataset.form === 'cal') submitCal(f);
 });
-document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && S.sheet) { S.sheet = null; render(); } });
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && S.sheet) { S.sheet = null; S.form = null; S.calForm = null; render(); }
+});
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible' || S.mode !== 'app' || S.demo) return;
-  if (Date.now() - S.lastFetch > 120000 || Date.now() - S.addedAt < 1800000) { S.addedAt = 0; refresh(); }
+  if (document.visibilityState !== 'visible' || S.mode !== 'app' || S.demo || S.dirty || S.sheet || S.saving) return;
+  if (Date.now() - S.lastFetch > 30000) sync();
 });
 deskMQ.addEventListener('change', e => { S.desk = e.matches; if (S.desk) window.scrollTo(0, 0); S.scrollDay = true; render(); });
 darkMQ.addEventListener('change', () => { applyTheme(); render(); });
@@ -969,19 +1337,17 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 /* ---------- start ---------- */
 function boot() {
   S.theme = store.get('kal_theme', 'auto'); applyTheme();
-  if (new URLSearchParams(location.search).has('demo')) { S.demo = true; startApp(); return; }
-  const gh = store.get('kal_gh', null);
-  if (!gh) { S.mode = 'lock'; render(); return; }
+  if (new URLSearchParams(location.search).has('demo')) { S.demo = true; S.data = demoData(); S.mode = 'app'; rebuild(); render(); return; }
+  const tok = ghTok();
+  if (!tok) { S.mode = 'lock'; render(); return; }
   boot2();
-  checkGh(gh).then(ok => {
-    if (!ok) { store.del('kal_gh'); S.sheet = null; S.mode = 'lock'; S.lockErr = 'Din GitHub-token fungerar inte längre. Klistra in en ny.'; render(); }
-  }).catch(() => {});
+  checkGh(tok).then(ok => { if (!ok) lockPage('Din GitHub-token fungerar inte längre. Klistra in en ny.'); }).catch(() => {});
 }
 function boot2() {
-  if (!hasClientId()) { S.mode = 'setup'; render(); return; }
-  const tk = store.get('kal_token', null);
-  if (tk && tk.exp > Date.now() + 60000) { S.token = tk.v; S.tokenExp = tk.exp; startApp(); return; }
-  S.mode = 'login'; render();
+  const c = store.get('kal_cache', null);
+  if (c && c.data) { S.data = normalize(c.data); S.sha = c.sha; S.mode = 'app'; rebuild(); render(); }
+  else { S.mode = 'loading'; render(); }
+  sync();
 }
 boot();
 </script>
