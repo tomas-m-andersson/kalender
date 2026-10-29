@@ -310,6 +310,94 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
   .grab{display:none}
 }
 @media (prefers-reduced-motion:reduce){.sheet,.bar::after{animation:none}}
+
+/* =====================================================================
+   STILAR – väljs under Inställningar
+   ===================================================================== */
+/* gemensamt för de djärva stilarna: stort färgblock överst i månadsvyn */
+:root[data-style="manad"]{--hb:var(--m);--hfg:var(--mfg)}
+:root[data-style="kraftig"]{--hb:#FFD60A;--hfg:#000}
+:root[data-style="manad"] .mhead,:root[data-style="kraftig"] .mhead{flex-wrap:wrap;background:var(--hb);color:var(--hfg);border-radius:0 0 34px 34px;padding:calc(14px + env(safe-area-inset-top)) 10px 22px 20px;margin-bottom:4px}
+:root[data-style="manad"] .mhead .hbtns,:root[data-style="kraftig"] .mhead .hbtns{order:-1;margin-left:auto}
+:root[data-style="manad"] .mhead h1,:root[data-style="kraftig"] .mhead h1{width:100%;display:flex;flex-direction:column;font-size:min(17vw,84px);line-height:.86;letter-spacing:-.045em;color:var(--hfg);margin-top:6px}
+:root[data-style="manad"] .mhead h1 span,:root[data-style="kraftig"] .mhead h1 span{order:-1;font-size:18px;font-weight:700;letter-spacing:0;line-height:1.2;color:var(--hfg);opacity:.75;margin-bottom:4px}
+:root[data-style="manad"] .mhead .pill,:root[data-style="kraftig"] .mhead .pill{background:color-mix(in srgb,var(--hfg) 16%,transparent);color:var(--hfg)}
+:root[data-style="manad"] .mhead .icon,:root[data-style="kraftig"] .mhead .icon{color:var(--hfg)}
+:root[data-style="manad"] .mhead .icon:hover,:root[data-style="kraftig"] .mhead .icon:hover{background:color-mix(in srgb,var(--hfg) 16%,transparent)}
+/* händelser som massiva färgfält */
+:root[data-style="manad"] .blk,:root[data-style="kraftig"] .blk,
+:root[data-style="manad"] .chip,:root[data-style="kraftig"] .chip,
+:root[data-style="manad"] .dev.ad,:root[data-style="kraftig"] .dev.ad{background:var(--c)!important;color:var(--t)!important}
+:root[data-style="manad"] .blk span,:root[data-style="kraftig"] .blk span{color:inherit;opacity:.85}
+:root[data-style="manad"] .blk{box-shadow:none!important}
+:root[data-style="manad"] .dots i,:root[data-style="kraftig"] .dots i{width:7px;height:7px;border-radius:4px}
+
+/* ---------- MÅNADSFÄRG: varje månad har sin egen färg ---------- */
+:root[data-style="manad"]{--bg:color-mix(in srgb,var(--m) 7%,#FFFFFF);--raise:#FFFFFF;--card:color-mix(in srgb,var(--m) 11%,#F4F4F4);--side:var(--m);--line:color-mix(in srgb,var(--m) 14%,#E4E4E4);--line2:color-mix(in srgb,var(--m) 26%,#C8C8C8);--fg:#15161A;--muted:#55565E;--faint:#686971;--accent:var(--m);--accentfg:var(--mfg);--sel:#15161A;--selfg:#FFFFFF;--now:var(--m)}
+@media (prefers-color-scheme:dark){:root[data-style="manad"]:not([data-theme="light"]){--bg:color-mix(in srgb,var(--m) 12%,#0E0F11);--raise:color-mix(in srgb,var(--m) 7%,#16171A);--card:color-mix(in srgb,var(--m) 20%,#1B1C20);--line:color-mix(in srgb,var(--m) 20%,#25262A);--line2:color-mix(in srgb,var(--m) 30%,#3A3B40);--fg:#F3F3F5;--muted:#AEB0B7;--faint:#93959C;--sel:#F3F3F5;--selfg:#111214}}
+:root[data-style="manad"][data-theme="dark"]{--bg:color-mix(in srgb,var(--m) 12%,#0E0F11);--raise:color-mix(in srgb,var(--m) 7%,#16171A);--card:color-mix(in srgb,var(--m) 20%,#1B1C20);--line:color-mix(in srgb,var(--m) 20%,#25262A);--line2:color-mix(in srgb,var(--m) 30%,#3A3B40);--fg:#F3F3F5;--muted:#AEB0B7;--faint:#93959C;--sel:#F3F3F5;--selfg:#111214}
+:root[data-style="manad"] .bignum:not(.red){color:var(--m)!important}
+:root[data-style="manad"] .tabs button[aria-current="page"] svg{background:var(--m);color:var(--mfg)}
+:root[data-style="manad"] .fab{background:var(--m);color:var(--mfg);box-shadow:0 12px 26px -10px var(--m)}
+:root[data-style="manad"] .dtop h1{color:var(--m)}
+:root[data-style="manad"] .dtop h1>span{color:var(--muted)}
+:root[data-style="manad"] .side{color:var(--mfg)}
+:root[data-style="manad"] .side .btn.primary{background:var(--mfg);color:var(--m)}
+:root[data-style="manad"] .side .mini .mg>span,:root[data-style="manad"] .side .mini .mg .out{color:color-mix(in srgb,var(--mfg) 65%,transparent)}
+:root[data-style="manad"] .side .mini .mg .sun{color:var(--mfg);font-weight:800;text-decoration:underline;text-underline-offset:3px}
+:root[data-style="manad"] .side .mini .mg .today{background:var(--mfg);color:var(--m)}
+:root[data-style="manad"] .side .mini .mg .sel{box-shadow:inset 0 0 0 2px var(--mfg)}
+:root[data-style="manad"] .side .mini .mg .inwk,:root[data-style="manad"] .side button:hover{background:color-mix(in srgb,var(--mfg) 16%,transparent)}
+:root[data-style="manad"] .side .ccheck .box{border-color:var(--mfg)}
+:root[data-style="manad"] .side .ccheck[aria-checked="true"] .box{background:var(--mfg);color:var(--m)}
+:root[data-style="manad"] .side .smallbtn{color:var(--mfg)}
+:root[data-style="manad"] .seg button[aria-pressed="true"]{background:var(--m);color:var(--mfg)}
+:root[data-style="manad"] .dcell.today .dn,:root[data-style="manad"] .dwh .today .n{background:var(--m);color:var(--mfg)}
+
+/* ---------- KRAFTIG: svarta konturer, hårda skuggor, gult ---------- */
+:root[data-style="kraftig"]{--bg:#FFFFFF;--raise:#FFFFFF;--card:#F0F0EE;--side:#FFD60A;--fg:#000;--muted:#2E2E2E;--faint:#575757;--line:#000;--line2:#000;--accent:#FFD60A;--accentfg:#000;--sun:#D11F3A;--sel:#000;--selfg:#FFD60A;--now:#D11F3A;--sh:#000}
+@media (prefers-color-scheme:dark){:root[data-style="kraftig"]:not([data-theme="light"]){--bg:#121212;--raise:#1C1C1C;--card:#2A2A2A;--fg:#FFF;--muted:#DADADA;--faint:#B5B5B5;--line:#FFF;--line2:#FFF;--sun:#FF5E70;--now:#FF5E70;--sel:#FFD60A;--selfg:#000;--sh:#FFD60A}}
+:root[data-style="kraftig"][data-theme="dark"]{--bg:#121212;--raise:#1C1C1C;--card:#2A2A2A;--fg:#FFF;--muted:#DADADA;--faint:#B5B5B5;--line:#FFF;--line2:#FFF;--sun:#FF5E70;--now:#FF5E70;--sel:#FFD60A;--selfg:#000;--sh:#FFD60A}
+:root[data-style="kraftig"] .mhead{border:3px solid #000;border-top:0;box-shadow:0 6px 0 var(--sh)}
+:root[data-style="kraftig"] .btn,:root[data-style="kraftig"] .pill,:root[data-style="kraftig"] .fab,:root[data-style="kraftig"] .banner,
+:root[data-style="kraftig"] .fgroup,:root[data-style="kraftig"] .seg,:root[data-style="kraftig"] .sform input,:root[data-style="kraftig"] .lockf input,
+:root[data-style="kraftig"] .cpick span{border:2.5px solid var(--line);box-shadow:3px 3px 0 var(--sh)}
+:root[data-style="kraftig"] .btn:active,:root[data-style="kraftig"] .pill:active,:root[data-style="kraftig"] .fab:active{transform:translate(3px,3px);box-shadow:none}
+:root[data-style="kraftig"] .mhead .pill{border-color:#000;box-shadow:2px 2px 0 #000;background:#fff;color:#000}
+:root[data-style="kraftig"] .sheet{border:3px solid var(--line);border-bottom:0;box-shadow:0 -6px 0 var(--sh)}
+:root[data-style="kraftig"] .list,:root[data-style="kraftig"] .tl{border-top:3px solid var(--line);border-radius:0}
+:root[data-style="kraftig"] .ev+.ev{border-top-width:2px}
+:root[data-style="kraftig"] .ev .d{width:10px;border:2px solid var(--line);border-radius:3px}
+:root[data-style="kraftig"] .blk{border:2.5px solid #000!important;box-shadow:3px 3px 0 #000!important;border-radius:8px}
+:root[data-style="kraftig"] .chip,:root[data-style="kraftig"] .dev.ad{border:2px solid #000}
+:root[data-style="kraftig"] .day.today .n,:root[data-style="kraftig"] .strip .today .n{border:2.5px solid var(--line);box-shadow:2px 2px 0 var(--sh)}
+:root[data-style="kraftig"] .day.sel .n,:root[data-style="kraftig"] .strip .sel .n{box-shadow:inset 0 0 0 2.5px var(--fg)}
+:root[data-style="kraftig"] .day.sel.today .n{box-shadow:2px 2px 0 var(--sh)}
+:root[data-style="kraftig"] .dots i{border:1.5px solid var(--line)}
+:root[data-style="kraftig"] .tabs{border-top:3px solid var(--line)}
+:root[data-style="kraftig"] .tabs button[aria-current="page"] svg{background:#FFD60A;color:#000;border:2px solid #000}
+:root[data-style="kraftig"] .fab{background:#FFD60A;color:#000;border-color:#000;box-shadow:4px 4px 0 #000}
+:root[data-style="kraftig"] .btn.primary{background:#000;color:#FFD60A}
+:root[data-style="kraftig"][data-theme="dark"] .btn.primary{background:#FFD60A;color:#000}
+@media (prefers-color-scheme:dark){:root[data-style="kraftig"]:not([data-theme="light"]) .btn.primary{background:#FFD60A;color:#000}}
+:root[data-style="kraftig"] .seg button[aria-pressed="true"]{background:#000;color:#FFD60A}
+:root[data-style="kraftig"] .bignum{-webkit-text-stroke:0}
+:root[data-style="kraftig"] .wkb{background:#FFD60A;color:#000!important;border:2px solid #000}
+:root[data-style="kraftig"] .side{border-right:3px solid #000;color:#000}
+:root[data-style="kraftig"] .side .btn.primary{background:#000;color:#FFD60A}
+:root[data-style="kraftig"] .side .mini .mg>span,:root[data-style="kraftig"] .side .mini .mg .out{color:#3A3A3A}
+:root[data-style="kraftig"] .side .mini .mg .sun{color:#B0102A}
+:root[data-style="kraftig"] .side .mini .mg .today{background:#000;color:#FFD60A}
+:root[data-style="kraftig"] .side .mini .mg .sel{box-shadow:inset 0 0 0 2.5px #000}
+:root[data-style="kraftig"] .side .mini .mg .inwk,:root[data-style="kraftig"] .side button:hover{background:rgba(0,0,0,.1)}
+:root[data-style="kraftig"] .side .smallbtn{color:#000}
+:root[data-style="kraftig"] .dmonth,:root[data-style="kraftig"] .dweek{border:3px solid var(--line);box-shadow:6px 6px 0 var(--sh);border-radius:18px}
+:root[data-style="kraftig"] .dcell{border-color:var(--line)}
+:root[data-style="kraftig"] .dcell.today .dn,:root[data-style="kraftig"] .dwh .today .n{background:#FFD60A;color:#000;border:2px solid #000}
+:root[data-style="kraftig"] .dtop h1 .wkb{box-shadow:2px 2px 0 #000}
+:root[data-style="manad"] .side .mini .mg .today.inwk,:root[data-style="manad"] .side .mini .mg .today{background:var(--mfg);color:var(--m)}
+:root[data-style="kraftig"] .side .mini .mg .today.inwk,:root[data-style="kraftig"] .side .mini .mg .today{background:#000;color:#FFD60A}
+.mini .mg .today.inwk{background:var(--accent)}
 </style>
 </head>
 <body>
@@ -348,7 +436,7 @@ const S = {
   data: null, sha: null, base: [], byId: new Map(), calendars: [],
   loading: 0, saving: 0, dirty: false, error: '', lastFetch: 0,
   sheet: null, cur: null, form: null, calForm: null, imp: null,
-  scrollDay: false, theme: 'auto', lockErr: '', lockBusy: false, installPrompt: null,
+  scrollDay: false, theme: 'auto', style: 'manad', lockErr: '', lockBusy: false, installPrompt: null,
   gToken: null, gTokenExp: 0,
   search: { q: '', results: null }
 };
@@ -445,12 +533,19 @@ const I = {
 
 /* ---------- tema ---------- */
 function isDark() { return S.theme === 'dark' || (S.theme === 'auto' && darkMQ.matches); }
+/* månadsfärger: [färg, textfärg ovanpå] */
+const MC = [['#2F64A0','#fff'],['#6A4FC0','#fff'],['#F0B323','#16161A'],['#2E8540','#fff'],['#C93F78','#fff'],['#F5CB3A','#16161A'],['#0F7FB8','#fff'],['#C9472C','#fff'],['#9A5420','#fff'],['#C8590E','#fff'],['#6B3F7A','#fff'],['#1F6B4A','#fff']];
+const STYLES = [['manad', 'Månadsfärg'], ['kraftig', 'Kraftig'], ['lugn', 'Lugn']];
 function applyTheme() {
   const r = document.documentElement;
   if (S.theme === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', S.theme);
+  r.setAttribute('data-style', S.style);
+  const mi = (S.view === 'month' ? S.month : S.sel).getMonth();
+  r.style.setProperty('--m', MC[mi][0]); r.style.setProperty('--mfg', MC[mi][1]);
   const tc = document.getElementById('tc');
-  if (tc) tc.setAttribute('content', isDark() ? '#121417' : '#ffffff');
+  if (tc) tc.setAttribute('content', S.style === 'manad' && S.mode === 'app' ? MC[mi][0] : S.style === 'kraftig' && S.mode === 'app' ? '#FFD60A' : (isDark() ? '#121417' : '#EEF1EC'));
 }
+function setStyle(v) { S.style = v; store.set('kal_style', v); applyTheme(); render(); }
 function setTheme(t) { S.theme = t; store.set('kal_theme', t); applyTheme(); render(); }
 
 /* =====================================================================
@@ -967,7 +1062,7 @@ function blockHtml(it, L, W) {
   const left = `calc(${L} + (${W}) * ${it.col} / ${it.ncol})`, width = `calc((${W}) / ${it.ncol} - 3px)`;
   const info = tall ? hm(e.start) + '–' + hm(e.end) : hm(e.start);
   const locS = h >= 62 && e.location ? `<span>${esc(e.location)}</span>` : '';
-  return `<button class="blk" data-act="open" ${oAttr(e)} style="top:${top}px;height:${h}px;left:${left};width:${width};background:${tint(e.color)};box-shadow:inset 0 0 0 1px color-mix(in srgb, ${esc(e.color)} 45%, transparent);${tall ? '' : 'flex-direction:row;align-items:center;gap:6px;padding:0 8px;'}"><b>${esc(e.title)}</b><span>${esc(info)}</span>${locS}</button>`;
+  return `<button class="blk" data-act="open" ${oAttr(e)} style="--c:${esc(e.color)};--t:${onColor(e.color)};top:${top}px;height:${h}px;left:${left};width:${width};background:${tint(e.color)};box-shadow:inset 0 0 0 1px color-mix(in srgb, ${esc(e.color)} 45%, transparent);${tall ? '' : 'flex-direction:row;align-items:center;gap:6px;padding:0 8px;'}"><b>${esc(e.title)}</b><span>${esc(info)}</span>${locS}</button>`;
 }
 function hourLines() {
   let h = '';
@@ -1040,6 +1135,8 @@ function settingsSheet() {
   return dlg(`<h2 id="sht">Inställningar</h2>
     <h3 class="shh">Utseende</h3><div class="seg full" role="group" aria-label="Utseende">${th}</div>
     <p class="note">Auto följer telefonens eller datorns inställning.</p>
+    <h3 class="shh">Stil</h3><div class="seg full" role="group" aria-label="Stil">${STYLES.map(t => `<button data-act="setstyle" data-v="${t[0]}" aria-pressed="${S.style === t[0]}">${t[1]}</button>`).join('')}</div>
+    <p class="note">${S.style === 'manad' ? 'Varje månad får sin egen färg.' : S.style === 'kraftig' ? 'Svarta konturer, hårda skuggor och gult.' : 'Dämpade färger i granskog och frost.'}</p>
     <h3 class="shh">Kalendrar</h3>${rows}
     <div class="btns" style="margin-top:10px"><button class="btn ghost" data-act="newcal">+ Ny kalender</button></div>
     <h3 class="shh">Google Kalender</h3><p class="note" style="margin-top:0">Kopiera in händelser från Google till din egen kalender. Inget ändras i Google, och sidan behöver inte Google efteråt.</p>
@@ -1126,7 +1223,7 @@ function viewMonth() {
   const title = (isT ? 'Idag, ' + DAYS[S.sel.getDay()] : cap(DAYS[S.sel.getDay()])) + ' ' + S.sel.getDate() + ' ' + MONTHS[S.sel.getMonth()];
   const list = evs.length ? evs.map(e => evRow(e, S.sel)).join('') : `<p class="empty">Inget inplanerat den här dagen.</p>`;
   return `<div class="view">
-  <header class="top"><h1>${cap(MONTHS[m.getMonth()])} <span>${m.getFullYear()}</span></h1>
+  <header class="top mhead"><h1>${cap(MONTHS[m.getMonth()])} <span>${m.getFullYear()}</span></h1>
   <div class="hbtns"><button class="pill" data-act="today">Idag</button><button class="icon" data-act="prev" aria-label="Föregående månad">${I.prev}</button><button class="icon" data-act="next" aria-label="Nästa månad">${I.next}</button></div></header>
   <div class="grid"><div class="whead" aria-hidden="true"><span class="v">v.</span><span>M</span><span>T</span><span>O</span><span>T</span><span>F</span><span>L</span><span class="s">S</span></div>${grid}</div>
   <section class="list"><div class="lhead"><h2>${title}</h2><button data-act="openday">Öppna dagen</button></div>${holiday(S.sel) ? `<p class="holi">${esc(holiday(S.sel).n)}</p>` : ''}${list}</section></div>`;
@@ -1143,7 +1240,7 @@ function viewDay() {
   const sub = (isT ? cap(DAYS[d.getDay()]) + ' ' : '') + d.getDate() + ' ' + MONTHS[d.getMonth()] + (d.getFullYear() !== t.getFullYear() ? ' ' + d.getFullYear() : '') + ' · vecka ' + isoWeek(d);
   const blocks = layout(timed, d).map(it => blockHtml(it, '58px', '100% - 66px')).join('');
   const now = isT ? `<div class="now" style="top:${nowTop()}px" aria-label="Nu, ${hm(new Date())}"><span>${hm(new Date())}</span><i></i><em></em></div>` : '';
-  const chips = all.length ? `<div class="allday"><span>Heldag</span>${all.map(e => `<button class="chip" data-act="open" ${oAttr(e)} style="background:${tint(e.color)}">${esc(e.title)}</button>`).join('')}</div>` : '';
+  const chips = all.length ? `<div class="allday"><span>Heldag</span>${all.map(e => `<button class="chip" data-act="open" ${oAttr(e)} style="--c:${esc(e.color)};--t:${onColor(e.color)};background:${tint(e.color)}">${esc(e.title)}</button>`).join('')}</div>` : '';
   const empty = !evs.length ? `<p class="empty" style="padding:2px 20px 10px">Inget inplanerat. Tryck i tidslinjen för att lägga till.</p>` : '';
   return `<div class="view"><div class="sticky">
   <header class="top dayhead"><h1><span class="bignum${isRed(d) ? ' red' : ''}">${d.getDate()}</span><span class="dlab"><b>${isT ? 'Idag, ' + DAYS[d.getDay()] : cap(DAYS[d.getDay()])}</b><span>${cap(MONTHS[d.getMonth()])}${d.getFullYear() !== t.getFullYear() ? ' ' + d.getFullYear() : ''} <span class="wkb">v. ${isoWeek(d)}</span></span></span></h1>
@@ -1198,7 +1295,7 @@ function deskMonth() {
     const cls = ['dcell', d.getMonth() !== m.getMonth() ? 'out' : '', sameDay(d, t) ? 'today' : '', sameDay(d, S.sel) ? 'sel' : '', isRed(d) ? 'sun' : ''].join(' ');
     const num = d.getDate() === 1 ? '1 ' + MONTHS_SHORT[d.getMonth()] : d.getDate();
     const rows = shown.map(e => coversDay(e, d)
-      ? `<button class="dev" data-act="open" ${oAttr(e)} style="background:${tint(e.color)}"><b>${esc(e.title)}</b></button>`
+      ? `<button class="dev ad" data-act="open" ${oAttr(e)} style="--c:${esc(e.color)};--t:${onColor(e.color)};background:${tint(e.color)}"><b>${esc(e.title)}</b></button>`
       : `<button class="dev" data-act="open" ${oAttr(e)}><i style="background:${esc(e.color)}"></i><span class="tm">${e.start < sod(d) ? '' : hm(e.start)}</span><b>${esc(e.title)}</b></button>`).join('');
     cells += `<div class="${cls}" data-act="pick" data-d="${dash(d)}"><span class="dhd"><button class="dn" data-act="dayopen" data-d="${dash(d)}" aria-label="Visa ${dayLabel(d)}">${num}</button>${hTag(d)}</span>${rows}${more ? `<button class="more" data-act="dayopen" data-d="${dash(d)}">+${more} till</button>` : ''}</div>`;
   }
@@ -1209,7 +1306,7 @@ function deskTime(days) {
   const head = days.map(d => `<button class="${sameDay(d, t) ? 'today' : ''} ${isRed(d) ? 'sun' : ''}" data-act="dayopen" data-d="${dash(d)}" aria-label="Visa ${dayLabel(d)}"><span class="l">${cap(DAYS_SHORT[d.getDay()])}</span><span class="n">${d.getDate()}</span>${hTag(d)}</button>`).join('');
   const allDays = days.map(d => eventsOn(d).filter(e => coversDay(e, d)));
   const allRow = allDays.some(a => a.length)
-    ? `<div class="dwa" style="--n:${n}"><span class="lab">Heldag</span>${allDays.map(a => `<div>${a.map(e => `<button class="chip" data-act="open" ${oAttr(e)} style="background:${tint(e.color)}">${esc(e.title)}</button>`).join('')}</div>`).join('')}</div>` : '';
+    ? `<div class="dwa" style="--n:${n}"><span class="lab">Heldag</span>${allDays.map(a => `<div>${a.map(e => `<button class="chip" data-act="open" ${oAttr(e)} style="--c:${esc(e.color)};--t:${onColor(e.color)};background:${tint(e.color)}">${esc(e.title)}</button>`).join('')}</div>`).join('')}</div>` : '';
   const cols = days.map(d => {
     const blocks = layout(eventsOn(d).filter(e => !coversDay(e, d)), d).map(it => blockHtml(it, '2px', '100% - 6px')).join('');
     const now = sameDay(d, t) ? `<div class="now nowc" style="top:${nowTop()}px" aria-label="Nu, ${hm(new Date())}"><i></i><em></em></div>` : '';
@@ -1241,6 +1338,7 @@ function deskView() {
 /* ---------- rita upp ---------- */
 function render() {
   const app = document.getElementById('app');
+  applyTheme();
   document.body.style.overflow = S.sheet ? 'hidden' : '';
   app.classList.toggle('wide', S.mode === 'app' && S.desk);
   const screens = { lock: viewLock, norepo: viewNoRepo, neterr: viewNetErr, loading: viewLoading };
@@ -1325,6 +1423,7 @@ document.addEventListener('click', ev => {
     case 'gotoday': selectDay(parseDate(el.dataset.d)); S.view = 'day'; S.sheet = null; S.scrollDay = true; render(); break;
     case 'settings': S.sheet = 'settings'; S.calForm = null; render(); break;
     case 'settheme': setTheme(el.dataset.v); break;
+    case 'setstyle': setStyle(el.dataset.v); break;
     case 'toggletheme': setTheme(isDark() ? 'light' : 'dark'); break;
     case 'togglecal': {
       const c = calById(el.dataset.id);
@@ -1400,7 +1499,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 
 /* ---------- start ---------- */
 function boot() {
-  S.theme = store.get('kal_theme', 'auto'); applyTheme();
+  S.theme = store.get('kal_theme', 'auto'); S.style = store.get('kal_style', 'manad'); applyTheme();
   if (new URLSearchParams(location.search).has('demo')) { S.demo = true; S.data = demoData(); S.mode = 'app'; rebuild(); render(); return; }
   const tok = ghTok();
   if (!tok) { S.mode = 'lock'; render(); return; }
