@@ -417,6 +417,7 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .sheet h2+.shh{margin-top:20px;padding-top:0;border-top:0}
 .sheet .note{margin-top:10px}
 .sheet .seg.full+.note{margin-top:8px}
+.hero .hlogo{width:56px;height:56px;margin-left:auto;flex:none;border-radius:50%}
 </style>
 </head>
 <body>
@@ -1776,7 +1777,7 @@ function sidePanel() {
   if (nowEv) status = `<button class="status" data-act="open" ${oAttr(nowEv)}><i style="background:${esc(nowEv.color)}"></i><span><b>Pågår nu: ${esc(nowEv.title)}</b>Till ${hm(nowEv.end)}${nx ? `, sedan ${esc(nx.title)} ${relDay(nx.start)} ${hm(nx.start)}` : ''}</span></button>`;
   else if (nx) status = `<button class="status" data-act="open" ${oAttr(nx)}><i style="background:${esc(nx.color)}"></i><span><b>Nästa: ${esc(nx.title)}</b>${cap(relDay(nx.start))} kl ${hm(nx.start)}${nx.location ? ', ' + esc(nx.location) : ''}</span></button>`;
   else status = `<div class="status"><span>Inget inplanerat de närmaste veckorna.</span></div>`;
-  const hero = `<section class="w hero" aria-label="Idag"><div class="hd"><span class="hnum">${t.getDate()}</span><span class="hl"><b>${cap(DAYS[t.getDay()])}</b><span>${cap(MONTHS[t.getMonth()])}, vecka ${isoWeek(t)}${holiday(t) ? ', ' + esc(holiday(t).n) : ''}</span></span></div></section>`;
+  const hero = `<section class="w hero" aria-label="Idag"><div class="hd"><span class="hnum">${t.getDate()}</span><span class="hl"><b>${cap(DAYS[t.getDay()])}</b><span>${cap(MONTHS[t.getMonth()])}, vecka ${isoWeek(t)}${holiday(t) ? ', ' + esc(holiday(t).n) : ''}</span></span><img class="hlogo" src="icon-192.png" alt="" width="56" height="56"></div></section>`;
   return `<aside class="side">
     ${hero}
     <button class="btn accent" data-act="new">${I.plusS}Ny händelse</button>
