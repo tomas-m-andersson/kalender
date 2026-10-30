@@ -422,7 +422,7 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .hero .hnum{border-radius:50%}
 .day.today .n,.strip .today .n{border-radius:50%}
 .mini .mg .today,.mini .mg .today.inwk{border-radius:50%;width:32px;justify-self:center}
-.dcell.today .dn{border-radius:50%;width:30px;height:30px;min-width:30px;padding:0}
+.dcell.today .dn{border-radius:50%;width:28px;height:28px;min-width:28px;padding:0}
 .dwh .today .n{border-radius:50%;width:40px;height:40px;min-width:40px}
 .cdbox{width:56px;min-width:56px;padding:0;border-radius:50%}
 .cdbox .cdv.m3{font-size:21px;letter-spacing:-.8px}
@@ -1854,10 +1854,10 @@ function deskMonth() {
       const d = addDays(ws, i);
       const cls = ['dcell', d.getMonth() !== m.getMonth() ? 'out' : '', sameDay(d, t) ? 'today' : '', sameDay(d, S.sel) ? 'sel' : '', isRed(d) ? 'sun' : ''].join(' ');
       const num = d.getDate() === 1 && !sameDay(d, t) ? '1 ' + MONTHS_SHORT[d.getMonth()] : d.getDate();
-      cells += `<div class="${cls}" data-act="pick" data-d="${dash(d)}"><span class="dhd"><button class="dn" data-act="dayopen" data-d="${dash(d)}" aria-label="Visa ${dayLabel(d)}">${num}</button>${hTag(d)}</span>${hid[i] ? `<button class="more" style="top:${34 + L * 20}px" data-act="dayopen" data-d="${dash(d)}">+${hid[i]} till</button>` : ''}</div>`;
+      cells += `<div class="${cls}" data-act="pick" data-d="${dash(d)}"><span class="dhd"><button class="dn" data-act="dayopen" data-d="${dash(d)}" aria-label="Visa ${dayLabel(d)}">${num}</button>${hTag(d)}</span>${hid[i] ? `<button class="more" style="top:${38 + L * 20}px" data-act="dayopen" data-d="${dash(d)}">+${hid[i]} till</button>` : ''}</div>`;
     }
     const bars = shown.map(g => {
-      const e = g.o, top = 34 + g.lane * 20;
+      const e = g.o, top = 38 + g.lane * 20;
       if (g.wide) return `<button class="dbar wide" data-act="open" ${oAttr(e)} style="${barPos(g, 4)};top:${top}px;background:${esc(e.color)};color:${onColor(e.color)}"><b>${g.cs ? '‹ ' : ''}${esc(e.title)}</b></button>`;
       return `<button class="dbar" data-act="open" ${oAttr(e)} style="${barPos(g, 4)};top:${top}px"><i style="background:${esc(e.color)}"></i><span class="tm">${hm(e.start)}</span><b>${esc(e.title)}</b></button>`;
     }).join('');
@@ -1869,7 +1869,7 @@ function deskMonth() {
 function fitLanes() {
   const r = document.querySelector('.dwrow');
   if (!r) return;
-  const L = Math.max(1, Math.floor((r.clientHeight - 34 - 20) / 20));
+  const L = Math.max(1, Math.floor((r.clientHeight - 38 - 20) / 20));
   if (L !== S.deskLanes) { S.deskLanes = L; render(); }
 }
 window.addEventListener('resize', () => { clearTimeout(window._fl); window._fl = setTimeout(fitLanes, 150); });
