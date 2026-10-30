@@ -475,6 +475,16 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .yd.today .n{background:var(--accent);color:var(--accentfg)}
 .ydots{display:flex;gap:2px;height:4px}
 .ydots i{width:4px;height:4px;border-radius:2px}
+.flabel{font-size:13px;font-weight:700;color:var(--muted);padding:12px 16px 0;float:left;width:100%}
+.swatches{clear:both}
+.swcal span{display:flex!important;align-items:center;justify-content:center}
+.swcal span b{font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.swcustom{position:relative}
+.swcustom span{background:conic-gradient(#e5484d,#f5a524,#46a758,#0090ff,#8e4ec6,#e5484d)!important;position:relative}
+.swcustom span::after{content:'';position:absolute;inset:9px;border-radius:50%;background:var(--c);box-shadow:0 0 0 2px var(--raise)}
+.swcustom input[type="color"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+.ownrow{cursor:pointer}
+.ownrow>span{flex:1;min-width:0;font-size:15px}
 </style>
 </head>
 <body>
@@ -1114,13 +1124,13 @@ document.addEventListener('change', ev => {
 function openForm(b, occ, day, hour) {
   if (b) {
     const endShown = b.allDay ? addDays(b.end, -1) : b.end;
-    S.form = { id: b.id, title: b.title, allDay: b.allDay, sd: dash(b.start), st: hm(b.start), ed: dash(endShown), et: hm(b.end), rep: b.rep ? b.rep.f : '', until: (b.rep && b.rep.until) || '', location: b.location, cal: b.cal, desc: b.desc, occ: occ || null, isRep: !!b.rep, remind: typeof b.remind === 'number' ? String(b.remind) : '', err: '', del: false };
+    S.form = { id: b.id, title: b.title, allDay: b.allDay, sd: dash(b.start), st: hm(b.start), ed: dash(endShown), et: hm(b.end), rep: b.rep ? b.rep.f : '', until: (b.rep && b.rep.until) || '', location: b.location, cal: b.cal, desc: b.desc, occ: occ || null, isRep: !!b.rep, remind: typeof b.remind === 'number' ? String(b.remind) : '', ecolor: b.color || '', err: '', del: false };
   } else {
     const d = day || S.sel, n = new Date();
     let h = hour != null ? hour : (sameDay(d, n) ? Math.min(23, n.getHours() + 1) : 9);
     const last = store.get('kal_lastcal', '');
     const cal = (calById(last) && last) || (S.calendars[0] && S.calendars[0].id);
-    S.form = { id: null, title: '', allDay: false, sd: dash(d), st: pad(h) + ':00', ed: dash(d), et: h >= 23 ? '23:59' : pad(h + 1) + ':00', rep: '', until: '', location: '', cal, desc: '', occ: null, isRep: false, remind: '', err: '', del: false };
+    S.form = { id: null, title: '', allDay: false, sd: dash(d), st: pad(h) + ':00', ed: dash(d), et: h >= 23 ? '23:59' : pad(h + 1) + ':00', rep: '', until: '', location: '', cal, desc: '', occ: null, isRep: false, remind: '', ecolor: '', err: '', del: false };
   }
   S.sheet = 'form'; render();
   setTimeout(() => { const t = document.getElementById('f-title'); if (t && !S.form.id) t.focus(); }, 60);
@@ -1156,6 +1166,7 @@ function formSheet() {
       <div class="frow repu"${f.rep ? '' : ' hidden'}><label for="f-until">Till och med</label>${dateField('until', f.until, '', '', 'f-until')}</div>
       <div class="frow"><label for="f-rem">Påminnelse</label><select class="fsel" id="f-rem" name="remind"><option value=""${f.remind === '' ? ' selected' : ''}>Standard (${remindLabel(defRemind()).toLowerCase()})</option>${REMIND.map(r => `<option value="${r[0]}"${f.remind === String(r[0]) ? ' selected' : ''}>${r[1]}</option>`).join('')}</select></div>
     </div>
+    ${colorPicker(f)}
     <fieldset class="fgroup"><legend class="sr">Kalender</legend><div class="cpick">${cals}</div></fieldset>
     <div class="fgroup"><label for="f-desc" class="sr">Anteckning</label><textarea class="fin" id="f-desc" name="desc" rows="3" placeholder="Anteckning (valfritt)">${esc(f.desc)}</textarea></div>
     ${f.err ? `<p class="ferr" role="alert">${esc(f.err)}</p>` : ''}
@@ -1163,11 +1174,21 @@ function formSheet() {
     <div class="btns"><button type="submit" class="btn primary">Spara</button><button type="button" class="btn ghost" data-act="close">Avbryt</button>${del}</div>
   </form></div>`;
 }
+function colorPicker(f) {
+  const cal = calById(f.cal), cc = cal ? cal.color : '#888888', cur = (f.ecolor || '').toLowerCase();
+  const inPal = !cur || PALETTE.some(c => c.toLowerCase() === cur);
+  const sw = PALETTE.map((c, i) => `<label style="--c:${c}"><input type="radio" name="ecolor" value="${c}"${cur === c.toLowerCase() ? ' checked' : ''} aria-label="Färg ${i + 1}"><span></span></label>`).join('');
+  return `<fieldset class="fgroup"><legend class="flabel">Färg</legend><div class="swatches">
+    <label style="--c:${esc(cc)}" class="swcal"><input type="radio" name="ecolor" value=""${!cur ? ' checked' : ''} aria-label="Samma som kalendern"><span><b>Kal.</b></span></label>${sw}
+    <label class="swcustom" style="--c:${esc(inPal ? '#888888' : f.ecolor)}"><input type="radio" name="ecolor" value="egen"${!inPal ? ' checked' : ''} aria-label="Egen färg"><span></span><input type="color" name="ecustom" value="${esc(inPal ? '#888888' : f.ecolor)}" aria-label="Välj egen färg"></label>
+  </div></fieldset>`;
+}
 function readForm(form) {
   const f = S.form;
   ['title', 'location', 'sd', 'st', 'ed', 'et', 'rep', 'until', 'desc', 'remind'].forEach(n => { if (form.elements[n]) f[n] = form.elements[n].value; });
   f.allDay = form.elements.allDay.checked;
   const c = form.querySelector('input[name="cal"]:checked'); if (c) f.cal = c.value;
+  const ec = form.querySelector('input[name="ecolor"]:checked'); f.ecolor = ec ? (ec.value === 'egen' ? form.elements.ecustom.value : ec.value) : '';
 }
 function submitEvent(form) {
   readForm(form);
@@ -1194,13 +1215,14 @@ function submitEvent(form) {
   if (f.desc.trim()) fields.desc = f.desc.trim();
   if (f.rep) fields.rep = { f: f.rep, until: f.until || '' };
   if (f.remind !== '' && f.remind != null) fields.remind = Number(f.remind);
+  if (f.ecolor) fields.color = f.ecolor;
   store.set('kal_lastcal', f.cal);
   S.sheet = null; S.form = null;
   selectDay(parseDate(f.sd));
   mutate(d => {
     const i = d.events.findIndex(x => x.id === id);
     if (i >= 0) {
-      const keep = {}; ['gid', 'ex', 'color'].forEach(k => { if (d.events[i][k] != null) keep[k] = d.events[i][k]; });
+      const keep = {}; ['gid', 'ex'].forEach(k => { if (d.events[i][k] != null) keep[k] = d.events[i][k]; });
       d.events[i] = Object.assign(keep, fields);
     } else d.events.push(fields);
   }, (isNew ? 'ny händelse ' : 'ändrar ') + '"' + title + '"');
@@ -1225,6 +1247,10 @@ function calSheet() {
   const f = S.calForm;
   const sw = PALETTE.map((c, i) => `<label style="--c:${c}"><input type="radio" name="color" value="${c}"${f.color.toLowerCase() === c.toLowerCase() ? ' checked' : ''} aria-label="Färg ${i + 1}"><span></span></label>`).join('');
   const count = f.id ? S.data.events.filter(e => e.cal === f.id).length : 0;
+  const own = f.id ? S.data.events.filter(e => e.cal === f.id && e.color).length : 0;
+  const inPal = PALETTE.some(c => c.toLowerCase() === (f.color || '').toLowerCase());
+  const custom = `<label class="swcustom" style="--c:${esc(inPal ? '#888888' : f.color)}"><input type="radio" name="color" value="egen"${!inPal ? ' checked' : ''} aria-label="Egen färg"><span></span><input type="color" name="ccustom" value="${esc(inPal ? '#888888' : f.color)}" aria-label="Välj egen färg"></label>`;
+  const ownRow = own ? `<label class="frow ownrow"><span><b>Ge alla händelser kalenderns färg</b><span class="note" style="display:block;margin:2px 0 0">${own} ${own === 1 ? 'händelse' : 'händelser'} i kalendern har en egen färg, oftast från Google.</span></span><input type="checkbox" class="tsw" name="resetcol" checked></label>` : '';
   let del = '';
   if (f.id && S.calendars.length > 1) {
     del = !f.del ? '<button type="button" class="btn danger" data-act="askdelcal">Ta bort kalendern</button>'
@@ -1234,7 +1260,8 @@ function calSheet() {
   <form class="form" data-form="cal" novalidate>
     <h2 id="sht">${f.id ? 'Ändra kalender' : 'Ny kalender'}</h2>
     <div class="fgroup"><label for="c-name" class="sr">Namn</label><input class="fin title" id="c-name" name="name" value="${esc(f.name)}" placeholder="Namn, t.ex. Familj" autocomplete="off"></div>
-    <fieldset class="fgroup"><legend class="sr">Färg</legend><div class="swatches">${sw}</div></fieldset>
+    <fieldset class="fgroup"><legend class="flabel">Färg</legend><div class="swatches">${sw}${custom}</div></fieldset>
+    ${ownRow ? `<div class="fgroup">${ownRow}</div>` : ''}
     ${f.err ? `<p class="ferr" role="alert">${esc(f.err)}</p>` : ''}
     <div class="btns"><button type="submit" class="btn primary">Spara</button><button type="button" class="btn ghost" data-act="settings">Avbryt</button>${del}</div>
   </form></div>`;
@@ -1242,13 +1269,15 @@ function calSheet() {
 function submitCal(form) {
   const f = S.calForm;
   f.name = form.elements.name.value.trim();
-  const c = form.querySelector('input[name="color"]:checked'); if (c) f.color = c.value;
+  const c = form.querySelector('input[name="color"]:checked'); if (c) f.color = c.value === 'egen' ? form.elements.ccustom.value : c.value;
   if (!f.name) { f.err = 'Skriv ett namn.'; render(); return; }
   const id = f.id || newId('c'), name = f.name, color = f.color, isNew = !f.id;
+  const reset = !!(form.elements.resetcol && form.elements.resetcol.checked);
   S.sheet = 'settings'; S.calForm = null;
   mutate(d => {
     const x = d.calendars.find(k => k.id === id);
     if (x) { x.name = name; x.color = color; } else d.calendars.push({ id, name, color });
+    if (reset) d.events.forEach(e => { if (e.cal === id) delete e.color; });
   }, (isNew ? 'ny kalender ' : 'ändrar kalender ') + '"' + name + '"');
 }
 
@@ -2118,6 +2147,13 @@ document.addEventListener('change', ev => {
   if (ev.target.id !== 's-remind') return;
   const v = Number(ev.target.value);
   mutate(d => { d.settings = d.settings || {}; d.settings.remind = v; }, 'standardpåminnelse ' + remindLabel(v).toLowerCase());
+});
+document.addEventListener('input', ev => {
+  const el = ev.target;
+  if (el.type !== 'color') return;
+  const lab = el.closest('.swcustom'); if (!lab) return;
+  lab.style.setProperty('--c', el.value);
+  lab.querySelector('input[type="radio"]').checked = true;
 });
 document.addEventListener('submit', ev => {
   const f = ev.target;
