@@ -424,6 +424,9 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .mini .mg .today,.mini .mg .today.inwk{border-radius:50%;width:32px;justify-self:center}
 .dcell.today .dn{border-radius:50%;width:30px;height:30px;min-width:30px;padding:0}
 .dwh .today .n{border-radius:50%;width:40px;height:40px;min-width:40px}
+.cdbox{width:56px;min-width:56px;padding:0;border-radius:50%}
+.cdbox .cdv.m3{font-size:21px;letter-spacing:-.8px}
+.cdbox .cdv.m4{font-size:16px;letter-spacing:-.4px}
 </style>
 </head>
 <body>
@@ -1344,23 +1347,24 @@ function cdText(c) {
     if (ms <= 0) return days === 0 ? ['Nu!', 'det är dags'] : [String(-days), -days === 1 ? 'dag sedan' : 'dagar sedan'];
     if (ms < 86400000 * 2) {
       const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
-      return h ? [h + ' h ' + m + ' min', 'kvar'] : [m + ' min', 'kvar'];
+      return h ? [h + ' h', m ? 'och ' + m + ' min kvar' : 'kvar'] : [String(m), m === 1 ? 'minut kvar' : 'minuter kvar'];
     }
   }
-  if (days === 0) return ['Idag!', ''];
+  if (days === 0) return ['Idag', 'det är idag!'];
   if (days < 0) return [String(-days), -days === 1 ? 'dag sedan' : 'dagar sedan'];
   return [String(days), days === 1 ? 'dag kvar' : 'dagar kvar'];
 }
+function cdSize(t) { const n = String(t).length; return n <= 2 ? '' : n === 3 ? 'm3' : 'm4'; }
 function cdCard(c) {
   const at = cdTarget(c), v = cdText(c);
   const when = at ? cap(DAYS[at.getDay()]) + ' ' + at.getDate() + ' ' + MONTHS[at.getMonth()] + (at.getFullYear() !== new Date().getFullYear() ? ' ' + at.getFullYear() : '') + (c.time ? ' kl ' + c.time : '') : '';
-  return `<section class="w kcard cd"><div class="cdhd"><span class="cdbox"><b class="cdv" data-cd="${esc(c.id)}">${esc(v[0])}</b></span><span class="cdl"><b>${esc(c.title || 'Nedräkning')}</b><span class="cdu" data-cdu="${esc(c.id)}">${esc(v[1])}</span><span class="ksub">${esc(when)}</span></span></div></section>`;
+  return `<section class="w kcard cd"><div class="cdhd"><span class="cdbox"><b class="cdv ${cdSize(v[0])}" data-cd="${esc(c.id)}">${esc(v[0])}</b></span><span class="cdl"><b>${esc(c.title || 'Nedräkning')}</b><span class="cdu" data-cdu="${esc(c.id)}">${esc(v[1])}</span><span class="ksub">${esc(when)}</span></span></div></section>`;
 }
 function tickCountdowns() {
   cardsList().forEach(c => {
     if (c.type !== 'countdown') return;
     const v = cdText(c);
-    document.querySelectorAll(`[data-cd="${CSS.escape(c.id)}"]`).forEach(el => { el.textContent = v[0]; });
+    document.querySelectorAll(`[data-cd="${CSS.escape(c.id)}"]`).forEach(el => { el.textContent = v[0]; el.className = 'cdv ' + cdSize(v[0]); });
     document.querySelectorAll(`[data-cdu="${CSS.escape(c.id)}"]`).forEach(el => { el.textContent = v[1]; });
   });
 }
