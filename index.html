@@ -456,6 +456,25 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .side{overflow:visible;padding-top:0}
 .sidehead{position:sticky;top:0;z-index:4;background:var(--bg);padding:20px 18px 14px 22px;margin:0 -18px -14px -22px;display:flex;flex-direction:column;gap:14px}
 .dmain{position:sticky;top:0}
+/* årsvy */
+.dyear{flex:1;min-height:0;overflow-y:auto;background:var(--raise);border-radius:26px;box-shadow:var(--shadow);padding:18px 18px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px 26px;align-content:start}
+.ym{min-width:0}
+.ymt{font-size:16px;font-weight:800;padding:4px 8px;margin:0 0 4px -8px;border-radius:10px}
+.ymt:hover{background:var(--card)}
+.ymt.cur{color:var(--fg);box-shadow:inset 0 -3px 0 var(--accent);border-radius:0}
+.ygrid{display:grid;grid-template-columns:22px repeat(7,minmax(0,1fr));row-gap:2px;text-align:center}
+.yh,.yv{font-size:10px;font-weight:700;color:var(--muted);height:18px;line-height:18px}
+.yh.s{color:var(--sun)}
+.ywk{font-size:10px;font-weight:600;color:var(--faint);height:30px;border-radius:6px}
+.ywk:hover{background:var(--card);color:var(--fg)}
+.yd{height:30px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;padding-top:2px;border-radius:8px}
+.yd:hover{background:var(--card)}
+.yd .n{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.yd.has .n{font-weight:800}
+.yd.sun .n{color:var(--sun)}
+.yd.today .n{background:var(--accent);color:var(--accentfg)}
+.ydots{display:flex;gap:2px;height:4px}
+.ydots i{width:4px;height:4px;border-radius:2px}
 </style>
 </head>
 <body>
@@ -562,7 +581,7 @@ function holiday(d) { return holidays(d.getFullYear()).get(dash(d)); }
 function isRed(d) { const h = holiday(d); return d.getDay() === 0 || !!(h && h.red); }
 function hTag(d) { const h = holiday(d); return h ? `<span class="hname${h.red ? '' : ' plain'}">${esc(h.n)}</span>` : ''; }
 function tint(c, p) { return `color-mix(in srgb, ${esc(c)} ${p || 24}%, var(--bg))`; }
-function curView() { return !S.desk && S.view === 'week' ? 'day' : S.view; }
+function curView() { return !S.desk && S.view === 'week' ? 'day' : !S.desk && S.view === 'year' ? 'month' : S.view; }
 let idSeq = 0;
 function newId(p) { return (p || 'e') + Date.now().toString(36) + (idSeq++).toString(36) + Math.random().toString(36).slice(2, 5); }
 function b64enc(str) { const bytes = new TextEncoder().encode(str); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
@@ -1772,6 +1791,7 @@ function mobileView() {
 function deskTitle() {
   const v = S.view, d = S.sel;
   if (v === 'month') return cap(MONTHS[S.month.getMonth()]) + ' <span>' + S.month.getFullYear() + '</span>';
+  if (v === 'year') return String(S.month.getFullYear());
   if (v === 'week') {
     const a = mondayOf(d), b = addDays(a, 6);
     const left = a.getMonth() === b.getMonth() ? a.getDate() : a.getDate() + ' ' + MONTHS_SHORT[a.getMonth()];
@@ -1824,6 +1844,28 @@ function fitLanes() {
   if (L !== S.deskLanes) { S.deskLanes = L; render(); }
 }
 window.addEventListener('resize', () => { clearTimeout(window._fl); window._fl = setTimeout(fitLanes, 150); });
+function deskYear() {
+  const y = S.month.getFullYear(), t = today0();
+  let html = '';
+  for (let mi = 0; mi < 12; mi++) {
+    const first = new Date(y, mi, 1), start = mondayOf(first);
+    let cells = '<span class="yv" aria-hidden="true">v.</span>' + ['M', 'T', 'O', 'T', 'F', 'L', 'S'].map((x, i) => `<span class="yh${i === 6 ? ' s' : ''}" aria-hidden="true">${x}</span>`).join('');
+    for (let w = 0; w < 6; w++) {
+      const ws = addDays(start, w * 7);
+      if (w > 0 && ws.getMonth() !== mi) break;
+      cells += `<button class="ywk" data-act="weekopen" data-d="${dash(ws)}" aria-label="Visa vecka ${isoWeek(ws)}">${isoWeek(ws)}</button>`;
+      for (let i = 0; i < 7; i++) {
+        const d = addDays(ws, i);
+        if (d.getMonth() !== mi) { cells += '<span></span>'; continue; }
+        const evs = eventsOn(d), cols = [...new Set(evs.map(e => e.color))].slice(0, 3);
+        const cls = ['yd', isRed(d) ? 'sun' : '', sameDay(d, t) ? 'today' : '', evs.length ? 'has' : ''].join(' ');
+        cells += `<button class="${cls}" data-act="dayopen" data-d="${dash(d)}" aria-label="${dayLabel(d)}${evs.length ? ', ' + evs.length + (evs.length === 1 ? ' händelse' : ' händelser') : ''}"${holiday(d) ? ` title="${esc(holiday(d).n)}"` : ''}><span class="n">${d.getDate()}</span><span class="ydots">${cols.map(c => `<i style="background:${esc(c)}"></i>`).join('')}</span></button>`;
+      }
+    }
+    html += `<section class="ym"><button class="ymt${t.getFullYear() === y && t.getMonth() === mi ? ' cur' : ''}" data-act="ymonth" data-m="${mi}">${cap(MONTHS[mi])}</button><div class="ygrid">${cells}</div></section>`;
+  }
+  return `<div class="dyear">${html}</div>`;
+}
 function deskTime(days) {
   const t = today0(), n = days.length;
   const head = days.map(d => `<button class="${sameDay(d, t) ? 'today' : ''} ${isRed(d) ? 'sun' : ''}" data-act="dayopen" data-d="${dash(d)}" aria-label="Visa ${dayLabel(d)}"><span class="l">${cap(DAYS_SHORT[d.getDay()])}</span><span class="n">${d.getDate()}</span>${hTag(d)}</button>`).join('');
@@ -1871,9 +1913,10 @@ function deskView() {
   let content;
   if (S.view === 'week') content = deskTime([0, 1, 2, 3, 4, 5, 6].map(i => addDays(mondayOf(S.sel), i)));
   else if (S.view === 'day') content = deskTime([S.sel]);
+  else if (S.view === 'year') content = deskYear();
   else if (S.view === 'search') content = `<div class="dsearch"><div style="padding:14px 12px 0"><button class="back" data-act="back">Tillbaka till kalendern</button></div>${searchBody()}</div>`;
   else content = deskMonth();
-  const seg = [['day', 'Dag'], ['week', 'Vecka'], ['month', 'Månad']].map(v => `<button data-act="setview" data-v="${v[0]}" aria-pressed="${S.view === v[0]}">${v[1]}</button>`).join('');
+  const seg = [['day', 'Dag'], ['week', 'Vecka'], ['month', 'Månad'], ['year', 'År']].map(v => `<button data-act="setview" data-v="${v[0]}" aria-pressed="${S.view === v[0]}">${v[1]}</button>`).join('');
   return `<div class="desk">${sidePanel()}<main class="dmain">
     <header class="dtop"><button class="pill" data-act="today">Idag</button><button class="icon" data-act="prev" aria-label="Föregående">${I.prev}</button><button class="icon" data-act="next" aria-label="Nästa">${I.next}</button>
     <h1><button class="titlebtn" data-act="openmp" aria-label="Välj månad och år">${deskTitle()}${I.down}</button></h1><span class="sp"></span>${searchForm()}<span class="sp"></span><div class="seg" role="group" aria-label="Vy">${seg}</div>
@@ -1928,6 +1971,11 @@ function stepView(k) {
   const cv = curView(), t = today0();
   if (cv === 'day') selectDay(addDays(S.sel, k));
   else if (cv === 'week') selectDay(addDays(S.sel, 7 * k));
+  else if (cv === 'year') {
+    const y = S.month.getFullYear() + k;
+    S.month = new Date(y, S.month.getMonth(), 1);
+    S.sel = t.getFullYear() === y ? t : new Date(y, 0, 1);
+  }
   else {
     S.month = new Date(S.month.getFullYear(), S.month.getMonth() + k, 1);
     S.sel = (t.getFullYear() === S.month.getFullYear() && t.getMonth() === S.month.getMonth()) ? t : S.month;
@@ -1954,7 +2002,8 @@ document.addEventListener('click', ev => {
     case 'openday': S.view = 'day'; S.scrollDay = true; render(); break;
     case 'today': selectDay(t); if (S.view === 'search') S.view = S.backView; if (S.view !== 'month') S.scrollDay = true; render(); break;
     case 'prev': case 'next': stepView(a === 'next' ? 1 : -1); render(); break;
-    case 'setview': S.view = el.dataset.v; if (S.view === 'month') S.month = firstOfMonth(S.sel); else S.scrollDay = true; render(); break;
+    case 'setview': S.view = el.dataset.v; if (S.view === 'month' || S.view === 'year') S.month = firstOfMonth(S.sel); else S.scrollDay = true; render(); break;
+    case 'ymonth': { const mo = new Date(S.month.getFullYear(), Number(el.dataset.m), 1); selectDay(sameDay(firstOfMonth(t), mo) ? t : mo); S.view = 'month'; render(); break; }
     case 'back': S.view = S.backView === 'search' ? 'month' : S.backView; S.scrollDay = true; render(); break;
     case 'tab':
       S.view = el.dataset.v; S.sheet = null;
@@ -1983,7 +2032,7 @@ document.addEventListener('click', ev => {
     case 'pickm': {
       const mo = new Date(S.pickYear, Number(el.dataset.m), 1);
       const d = (t.getFullYear() === mo.getFullYear() && t.getMonth() === mo.getMonth()) ? t : mo;
-      selectDay(d); if (S.view === 'search') S.view = 'month';
+      selectDay(d); if (S.view === 'search' || S.view === 'year') S.view = 'month';
       if (S.view !== 'month') S.scrollDay = true;
       S.sheet = null; render(); break;
     }
