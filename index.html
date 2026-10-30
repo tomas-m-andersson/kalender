@@ -427,6 +427,30 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .cdbox{width:56px;min-width:56px;padding:0;border-radius:50%}
 .cdbox .cdv.m3{font-size:21px;letter-spacing:-.8px}
 .cdbox .cdv.m4{font-size:16px;letter-spacing:-.4px}
+/* staplar i månadsvyn */
+.wrow{position:relative}
+.day{height:76px;position:relative}
+.mplus{position:absolute;right:2px;bottom:2px;font-size:10px;font-weight:800;color:var(--muted)}
+.mbars{position:absolute;left:28px;right:0;top:0;bottom:0;pointer-events:none;--br:3px}
+.mbars i{position:absolute;height:6px;display:block}
+.dmg{display:flex;flex-direction:column}
+.dwrow{flex:1;min-height:0;display:grid;grid-template-columns:40px repeat(7,minmax(0,1fr));position:relative}
+.dcell{position:relative}
+.dcell .more{position:absolute;left:4px}
+.dbars{position:absolute;left:40px;right:0;top:0;bottom:0;pointer-events:none;--br:6px}
+.dbar{position:absolute;height:20px;display:flex;align-items:center;gap:6px;padding:0 6px;font-size:12px;text-align:left;white-space:nowrap;overflow:hidden;pointer-events:auto;border-radius:6px}
+.dbar:hover{background:var(--card)}
+.dbar.wide:hover{filter:brightness(1.06)}
+.dbar i{width:10px;height:10px;border-radius:5px;flex:none}
+.dbar .tm{color:var(--muted);flex:none;font-size:11px;font-weight:600}
+.dbar b{font-weight:700;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mplus{top:3px;bottom:auto;right:1px}
+.mbars i{height:7px}
+.dbar{height:18px}
+.dcell .more{min-height:18px;line-height:18px}
+.dtop .sform{flex:1 1 150px;max-width:260px;min-width:140px;width:auto}
+.day{height:86px}
+.mplus{top:auto;bottom:2px;right:auto;left:0;width:100%;text-align:center;font-size:11px}
 </style>
 </head>
 <body>
@@ -1652,6 +1676,36 @@ function viewNetErr() { return center(`${I.big}<h1>Ingen kontakt</h1><p>Kunde in
 function viewLoading() { return center(`${I.big}<h1>Kalender</h1><p role="status">Hämtar din kalender…</p>`); }
 
 /* ---------- MOBIL ---------- */
+/* Händelser i en vecka som staplar: dag s till dag e (0 = måndag), i "filer" (lane) */
+function weekSegs(ws) {
+  const we = addDays(ws, 7), vis = new Set(S.calendars.filter(c => c.on).map(c => c.id)), segs = [];
+  const dayIx = d => Math.round((sod(d) - ws) / 86400000);
+  for (const b of S.base) {
+    if (!vis.has(b.cal)) continue;
+    for (const o of occurrences(b, ws, we)) {
+      const s0 = Math.max(0, dayIx(o.start)), e0 = Math.min(6, dayIx(new Date(o.end.getTime() - 1)));
+      if (e0 < 0 || s0 > 6 || e0 < s0) continue;
+      segs.push({ o, s: s0, e: e0, cs: o.start < ws, ce: o.end > we, wide: o.allDay || e0 > s0 });
+    }
+  }
+  segs.sort((a, b) => (b.e - b.s) - (a.e - a.s) || (b.wide - a.wide) || (a.o.start - b.o.start) || a.o.title.localeCompare(b.o.title, 'sv'));
+  const lanes = [];
+  segs.forEach(g => {
+    let l = 0;
+    while (lanes[l] && lanes[l].some(x => !(g.e < x.s || g.s > x.e))) l++;
+    (lanes[l] = lanes[l] || []).push(g); g.lane = l;
+  });
+  return segs;
+}
+function hiddenPerDay(segs, L) {
+  const h = [0, 0, 0, 0, 0, 0, 0];
+  segs.forEach(g => { if (g.lane >= L) for (let d = g.s; d <= g.e; d++) h[d]++; });
+  return h;
+}
+function barPos(g, inset) {
+  const l = g.cs ? 0 : inset, r = g.ce ? 0 : inset;
+  return `left:calc(100% * ${g.s} / 7 + ${l}px);width:calc(100% * ${g.e - g.s + 1} / 7 - ${l + r}px);border-radius:${g.cs ? 0 : 'var(--br)'} ${g.ce ? 0 : 'var(--br)'} ${g.ce ? 0 : 'var(--br)'} ${g.cs ? 0 : 'var(--br)'}`;
+}
 function viewMonth() {
   const m = S.month, t = today0();
   const start = mondayOf(m);
@@ -1659,15 +1713,14 @@ function viewMonth() {
   const weeks = Math.ceil((Math.round((last - start) / 86400000) + 1) / 7);
   let grid = '';
   for (let w = 0; w < weeks; w++) {
-    const ws = addDays(start, w * 7);
+    const ws = addDays(start, w * 7), segs = weekSegs(ws), L = 3, hid = hiddenPerDay(segs, L);
     grid += `<div class="wrow"><span class="wk" aria-hidden="true">${isoWeek(ws)}</span>`;
     for (let i = 0; i < 7; i++) {
-      const d = addDays(ws, i), evs = eventsOn(d);
-      const colors = [...new Set(evs.map(e => e.color))].slice(0, 3);
+      const d = addDays(ws, i), cnt = segs.filter(g => g.s <= i && g.e >= i).length;
       const cls = ['day', d.getMonth() !== m.getMonth() ? 'out' : '', sameDay(d, t) ? 'today' : '', sameDay(d, S.sel) ? 'sel' : '', isRed(d) ? 'sun' : ''].join(' ');
-      grid += `<button class="${cls}" data-act="pick" data-d="${dash(d)}" aria-label="${dayLabel(d)}${evs.length ? ', ' + evs.length + (evs.length === 1 ? ' händelse' : ' händelser') : ''}"${sameDay(d, S.sel) ? ' aria-pressed="true"' : ''}><span class="n">${d.getDate()}</span><span class="dots">${colors.map(c => `<i style="background:${esc(c)}"></i>`).join('')}</span></button>`;
+      grid += `<button class="${cls}" data-act="pick" data-d="${dash(d)}" aria-label="${dayLabel(d)}${cnt ? ', ' + cnt + (cnt === 1 ? ' händelse' : ' händelser') : ''}"${sameDay(d, S.sel) ? ' aria-pressed="true"' : ''}><span class="n">${d.getDate()}</span>${hid[i] ? `<span class="mplus" aria-hidden="true">+${hid[i]}</span>` : ''}</button>`;
     }
-    grid += '</div>';
+    grid += `<div class="mbars" aria-hidden="true">${segs.filter(g => g.lane < L).map(g => `<i style="${barPos(g, 3)};top:${45 + g.lane * 10}px;background:${esc(g.o.color)}"></i>`).join('')}</div></div>`;
   }
   const evs = eventsOn(S.sel), isT = sameDay(S.sel, t);
   const title = (isT ? 'Idag, ' + DAYS[S.sel.getDay()] : cap(DAYS[S.sel.getDay()])) + ' ' + S.sel.getDate() + ' ' + MONTHS[S.sel.getMonth()];
@@ -1737,21 +1790,35 @@ function deskMonth() {
   const m = S.month, t = today0(), start = mondayOf(m);
   const last = new Date(m.getFullYear(), m.getMonth() + 1, 0);
   const weeks = Math.ceil((Math.round((last - start) / 86400000) + 1) / 7);
-  const max = weeks === 6 ? 3 : 4;
-  let cells = '';
-  for (let i = 0; i < weeks * 7; i++) {
-    const d = addDays(start, i), evs = eventsOn(d);
-    if (i % 7 === 0) cells += `<button class="dwk" data-act="weekopen" data-d="${dash(d)}" aria-label="Visa vecka ${isoWeek(d)}" title="Visa vecka ${isoWeek(d)}">${isoWeek(d)}</button>`;
-    const shown = evs.length > max + 1 ? evs.slice(0, max) : evs, more = evs.length - shown.length;
-    const cls = ['dcell', d.getMonth() !== m.getMonth() ? 'out' : '', sameDay(d, t) ? 'today' : '', sameDay(d, S.sel) ? 'sel' : '', isRed(d) ? 'sun' : ''].join(' ');
-    const num = d.getDate() === 1 && !sameDay(d, t) ? '1 ' + MONTHS_SHORT[d.getMonth()] : d.getDate();
-    const rows = shown.map(e => coversDay(e, d)
-      ? `<button class="dev ad" data-act="open" ${oAttr(e)} style="--c:${esc(e.color)};--t:${onColor(e.color)};background:${tint(e.color)}"><b>${esc(e.title)}</b></button>`
-      : `<button class="dev" data-act="open" ${oAttr(e)}><i style="background:${esc(e.color)}"></i><span class="tm">${e.start < sod(d) ? '' : hm(e.start)}</span><b>${esc(e.title)}</b></button>`).join('');
-    cells += `<div class="${cls}" data-act="pick" data-d="${dash(d)}"><span class="dhd"><button class="dn" data-act="dayopen" data-d="${dash(d)}" aria-label="Visa ${dayLabel(d)}">${num}</button>${hTag(d)}</span>${rows}${more ? `<button class="more" data-act="dayopen" data-d="${dash(d)}">+${more} till</button>` : ''}</div>`;
+  const L = S.deskLanes || (weeks === 6 ? 2 : 3);
+  let rows = '';
+  for (let w = 0; w < weeks; w++) {
+    const ws = addDays(start, w * 7), segs = weekSegs(ws), shown = segs.filter(g => g.lane < L);
+    const hid = hiddenPerDay(segs, L);
+    let cells = `<button class="dwk" data-act="weekopen" data-d="${dash(ws)}" aria-label="Visa vecka ${isoWeek(ws)}" title="Visa vecka ${isoWeek(ws)}">${isoWeek(ws)}</button>`;
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(ws, i);
+      const cls = ['dcell', d.getMonth() !== m.getMonth() ? 'out' : '', sameDay(d, t) ? 'today' : '', sameDay(d, S.sel) ? 'sel' : '', isRed(d) ? 'sun' : ''].join(' ');
+      const num = d.getDate() === 1 && !sameDay(d, t) ? '1 ' + MONTHS_SHORT[d.getMonth()] : d.getDate();
+      cells += `<div class="${cls}" data-act="pick" data-d="${dash(d)}"><span class="dhd"><button class="dn" data-act="dayopen" data-d="${dash(d)}" aria-label="Visa ${dayLabel(d)}">${num}</button>${hTag(d)}</span>${hid[i] ? `<button class="more" style="top:${34 + L * 20}px" data-act="dayopen" data-d="${dash(d)}">+${hid[i]} till</button>` : ''}</div>`;
+    }
+    const bars = shown.map(g => {
+      const e = g.o, top = 34 + g.lane * 20;
+      if (g.wide) return `<button class="dbar wide" data-act="open" ${oAttr(e)} style="${barPos(g, 4)};top:${top}px;background:${esc(e.color)};color:${onColor(e.color)}"><b>${g.cs ? '‹ ' : ''}${esc(e.title)}</b></button>`;
+      return `<button class="dbar" data-act="open" ${oAttr(e)} style="${barPos(g, 4)};top:${top}px"><i style="background:${esc(e.color)}"></i><span class="tm">${hm(e.start)}</span><b>${esc(e.title)}</b></button>`;
+    }).join('');
+    rows += `<div class="dwrow">${cells}<div class="dbars">${bars}</div></div>`;
   }
-  return `<div class="dmonth"><div class="dmh" aria-hidden="true"><span class="v">v.</span><span>Mån</span><span>Tis</span><span>Ons</span><span>Tor</span><span>Fre</span><span>Lör</span><span class="s">Sön</span></div><div class="dmg" style="grid-template-rows:repeat(${weeks},minmax(0,1fr))">${cells}</div></div>`;
+  return `<div class="dmonth"><div class="dmh" aria-hidden="true"><span class="v">v.</span><span>Mån</span><span>Tis</span><span>Ons</span><span>Tor</span><span>Fre</span><span>Lör</span><span class="s">Sön</span></div><div class="dmg">${rows}</div></div>`;
 }
+/* räkna ut hur många staplar som får plats i en rad på datorn */
+function fitLanes() {
+  const r = document.querySelector('.dwrow');
+  if (!r) return;
+  const L = Math.max(1, Math.floor((r.clientHeight - 34 - 20) / 20));
+  if (L !== S.deskLanes) { S.deskLanes = L; render(); }
+}
+window.addEventListener('resize', () => { clearTimeout(window._fl); window._fl = setTimeout(fitLanes, 150); });
 function deskTime(days) {
   const t = today0(), n = days.length;
   const head = days.map(d => `<button class="${sameDay(d, t) ? 'today' : ''} ${isRed(d) ? 'sun' : ''}" data-act="dayopen" data-d="${dash(d)}" aria-label="Visa ${dayLabel(d)}"><span class="l">${cap(DAYS_SHORT[d.getDay()])}</span><span class="n">${d.getDate()}</span>${hTag(d)}</button>`).join('');
@@ -1833,6 +1900,7 @@ function render() {
   const sh = app.querySelector('.sheet');
   if (sh) { if (hadSheet) sh.scrollTop = sheetKeep; else sh.focus({ preventScroll: true }); }
   S._lastSheet = S.sheet;
+  if (S.desk && S.view === 'month' && !S._fitting) { S._fitting = true; requestAnimationFrame(() => { fitLanes(); S._fitting = false; }); }
   const n = new Date(), startH = sameDay(S.sel, n) || (S.view === 'week' && mondayOf(n).getTime() === mondayOf(S.sel).getTime()) ? Math.max(0, n.getHours() - 2) : 7;
   if (S.desk) {
     const ws = document.querySelector('.wscroll');
