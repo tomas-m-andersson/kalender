@@ -451,6 +451,11 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .dtop .sform{flex:1 1 150px;max-width:260px;min-width:140px;width:auto}
 .day{height:86px}
 .mplus{top:auto;bottom:2px;right:auto;left:0;width:100%;text-align:center;font-size:11px}
+/* datorn: datumrutan och Ny händelse står still, resten av vänsterspalten scrollar med sidan */
+.desk{height:auto;min-height:100dvh;align-items:start}
+.side{overflow:visible;padding-top:0}
+.sidehead{position:sticky;top:0;z-index:4;background:var(--bg);padding:20px 18px 14px 22px;margin:0 -18px -14px -22px;display:flex;flex-direction:column;gap:14px}
+.dmain{position:sticky;top:0}
 </style>
 </head>
 <body>
@@ -1856,8 +1861,8 @@ function sidePanel() {
   else status = `<div class="status"><span>Inget inplanerat de närmaste veckorna.</span></div>`;
   const hero = `<section class="w hero" aria-label="Idag"><div class="hd"><span class="hnum">${t.getDate()}</span><span class="hl"><b>${cap(DAYS[t.getDay()])}</b><span>${cap(MONTHS[t.getMonth()])}, vecka ${isoWeek(t)}${holiday(t) ? ', ' + esc(holiday(t).n) : ''}</span></span><img class="hlogo" src="icon-192.png" alt="" width="56" height="56"></div></section>`;
   return `<aside class="side">
-    ${hero}
-    <button class="btn accent" data-act="new">${I.plusS}Ny händelse</button>
+    <div class="sidehead">${hero}
+    <button class="btn accent" data-act="new">${I.plusS}Ny händelse</button></div>
     ${cardsHtml()}
     <section class="w">${miniMonth()}</section>
   </aside>`;
