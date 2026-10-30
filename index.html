@@ -370,6 +370,34 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .mbtn:hover{background:var(--soft)}
 .mbtn.isnow{box-shadow:inset 0 0 0 2px var(--accent),var(--shadow)}
 .mbtn.cur{background:var(--sel);color:var(--selfg)}
+.cards{display:flex;flex-direction:column;gap:12px;margin:12px 10px 0}
+.kcard h3{margin:0 0 6px;font-size:15px;font-weight:800}
+.ksub{margin:4px 0 0;font-size:14px;color:var(--muted);line-height:1.45}
+.cdrow{margin:2px 0 0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.cdv{font-size:40px;font-weight:800;letter-spacing:-1.2px;line-height:1.05}
+.cdu{font-size:16px;font-weight:700;color:var(--muted)}
+.ndn{margin:2px 0 0;font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.25}
+.wxnow{display:flex;align-items:center;gap:12px;margin-top:4px}
+.wxi{flex:none;color:var(--accent)}
+.wxt{font-size:40px;font-weight:800;letter-spacing:-1.5px;line-height:1}
+.wxd{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wxd b{font-size:15px}
+.wxd span{font-size:13px;color:var(--muted)}
+.wxrow{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:12px;font-size:14px;color:var(--muted)}
+.wxrow b{color:var(--fg)}
+.wxsun{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+.wxsun span{display:inline-flex;align-items:center;gap:6px}
+.wxsun b{color:var(--fg)}
+.krow{gap:2px;min-height:54px}
+.kname{flex:1;min-width:0;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icon.sm{width:38px;height:38px}
+.icon.sm:disabled{opacity:.3}
+.addlist{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.addrow{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px 16px;border-radius:18px;background:var(--raise);box-shadow:var(--shadow);text-align:left;width:100%}
+.addrow b{font-size:16px}
+.addrow span{font-size:14px;color:var(--muted);line-height:1.4}
+.addrow:hover{background:var(--soft)}
+.addrow:disabled{opacity:.55;box-shadow:none}
 </style>
 </head>
 <body>
@@ -1202,6 +1230,244 @@ function whenText(e) {
 }
 function scrim() { return '<div class="scrim" data-act="close"></div>'; }
 function dlg(inner) { return `${scrim()}<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sht" tabindex="-1"><div class="grab"></div>${inner}</div>`; }
+/* Svenska namnsdagar (namnlängden), data från github.com/hdjarv/dagens-namn, MIT-licens */
+const NAMN = ["|Svea|Alfred,Alfrida|Rut|Hanna,Hannele|Kasper,Melker,Baltsar|August,Augusta|Erland|Gunnar,Gunder|Sigurd,Sigbritt|Jan,Jannike|Frideborg,Fridolf|Knut|Felix,Felicia|Laura,Lorentz|Hjalmar,Helmer|Anton,Tony|Hilda,Hildur|Henrik|Fabian,Sebastian|Agnes,Agneta|Vincent,Viktor|Frej,Freja|Erika|Paul,Pål|Bodil,Boel|Göte,Göta|Karl,Karla|Diana|Gunilla,Gunhild|Ivar,Joar", "Max,Maximilian||Disa,Hjördis|Ansgar,Anselm|Agata,Agda|Dorotea,Doris|Rikard,Dick|Berta,Bert|Fanny,Franciska|Iris|Yngve,Inge|Evelina,Evy|Agne,Ove|Valentin|Sigfrid|Julia,Julius|Alexandra,Sandra|Frida,Fritiof|Gabriella,Ella|Vivianne|Hilding|Pia|Torsten,Torun|Mattias,Mats|Sigvard,Sivert|Torgny,Torkel|Lage|Maria|", "Albin,Elvira|Ernst,Erna|Gunborg,Gunvor|Adrian,Adriana|Tora,Tove|Ebba,Ebbe|Camilla|Siv|Torbjörn,Torleif|Edla,Ada|Edvin,Egon|Viktoria|Greger|Matilda,Maud|Kristoffer,Christel|Herbert,Gilbert|Gertrud|Edvard,Edmund|Josef,Josefina|Joakim,Kim|Bengt|Kennet,Kent|Gerda,Gerd|Gabriel,Rafael||Emanuel|Rudolf,Ralf|Malkolm,Morgan|Jonas,Jens|Holger,Holmfrid|Ester", "Harald,Hervor|Gudmund,Ingemund|Ferdinand,Nanna|Marianne,Marlene|Irene,Irja|Vilhelm,William|Irma,Irmelin|Nadja,Tanja|Otto,Ottilia|Ingvar,Ingvor|Ulf,Ylva|Liv|Artur,Douglas|Tiburtius|Olivia,Oliver|Patrik,Patricia|Elias,Elis|Valdemar,Volmar|Olaus,Ola|Amalia,Amelie|Anneli,Annika|Allan,Glenn|Georg,Göran|Vega|Markus|Teresia,Terese|Engelbrekt|Ture,Tyra|Tyko|Mariana", "Valborg|Filip,Filippa|John,Jane|Monika,Mona|Gotthard,Erhard|Marit,Rita|Carina,Carita|Åke|Reidar,Reidun|Esbjörn,Styrbjörn|Märta,Märit|Charlotta,Lotta|Linnea,Linn|Halvard,Halvar|Sofia,Sonja|Ronald,Ronny|Rebecka,Ruben|Erik|Maj,Majken|Karolina,Carola|Konstantin,Conny|Hemming,Henning|Desideria,Desirée|Ivan,Vanja|Urban|Vilhelmina,Vilma|Beda,Blenda|Ingeborg,Borghild|Yvonne,Jeanette|Vera,Veronika|Petronella,Pernilla", "Gun,Gunnel|Rutger,Roger|Ingemar,Gudmar|Solbritt,Solveig|Bo|Gustav,Gösta|Robert,Robin|Eivor,Majvor|Börje,Birger|Svante,Boris|Bertil,Berthold|Eskil|Aina,Aino|Håkan,Hakon|Margit,Margot|Axel,Axelina|Torborg,Torvald|Björn,Bjarne|Germund,Görel|Linda|Alf,Alvar|Paulina,Paula|Adolf,Alice||David,Salomon|Rakel,Lea|Selma,Fingal|Leo|Peter,Petra|Elof,Leif", "Aron,Mirjam|Rosa,Rosita|Aurora|Ulrika,Ulla|Laila,Ritva|Esaias,Jessika|Klas|Kjell|Jörgen,Örjan|André,Andrea|Eleonora,Ellinor|Herman,Hermine|Joel,Judit|Folke|Ragnhild,Ragnvald|Reinhold,Reine|Bruno|Fredrik,Fritz|Sara|Margareta,Greta|Johanna|Magdalena,Madeleine|Emma|Kristina,Kerstin|Jakob|Jesper|Marta|Botvid,Seved|Olof|Algot|Helena,Elin", "Per|Karin,Kajsa|Tage|Arne,Arnold|Ulrik,Alrik|Alfons,Inez|Dennis,Denise|Silvia,Sylvia|Roland|Lars|Susanna|Klara|Kaj|Uno|Stella,Estelle|Brynolf|Verner,Valter|Ellen,Lena|Magnus,Måns|Bernhard,Bernt|Jon,Jonna|Henrietta,Henrika|Signe,Signhild|Bartolomeus|Lovisa,Louise|Östen|Rolf,Raoul|Fatima,Leila|Hans,Hampus|Albert,Albertina|Arvid,Vidar", "Sam,Samuel|Justus,Justina|Alfhild,Alva|Gisela|Adela,Heidi|Lilian,Lilly|Kevin,Roy|Alma,Hulda|Anita,Annette|Tord,Turid|Dagny,Helny|Åsa,Åslög|Sture|Ida|Sigrid,Siri|Dag,Daga|Hildegard,Magnhild|Orvar|Fredrika|Elise,Lisa|Matteus|Maurits,Moritz|Tekla,Tea|Gerhard,Gert|Tryggve|Enar,Einar|Dagmar,Rigmor|Lennart,Leonard|Mikael,Mikaela|Helge", "Ragnar,Ragna|Ludvig,Love|Evald,Osvald|Frans,Frank|Bror|Jenny,Jennifer|Birgitta,Britta|Nils|Ingrid,Inger|Harry,Harriet|Erling,Jarl|Valfrid,Manfred|Berit,Birgit|Stellan|Hedvig,Hillevi|Finn|Antonia,Toini|Lukas|Tore,Tor|Sibylla|Ursula,Yrsa|Marika,Marita|Severin,Sören|Evert,Eilert|Inga,Ingalill|Amanda,Rasmus|Sabina|Simon,Simone|Viola|Elsa,Isabella|Edit,Edgar", "|Tobias|Hubert,Hugo|Sverker|Eugen,Eugenia|Gustav Adolf|Ingegerd,Ingela|Vendela|Teodor,Teodora|Martin,Martina|Mårten|Konrad,Kurt|Kristian,Krister|Emil,Emilia|Leopold|Vibeke,Viveka|Naemi,Naima|Lillemor,Moa|Elisabet,Lisbet|Pontus,Marina|Helga,Olga|Cecilia,Sissela|Klemens|Gudrun,Rune|Katarina,Katja|Linus|Astrid,Asta|Malte|Sune|Andreas,Anders", "Oskar,Ossian|Beata,Beatrice|Lydia|Barbara,Barbro|Sven|Nikolaus,Niklas|Angela,Angelika|Virginia|Anna|Malin,Malena|Daniel,Daniela|Alexander,Alexis|Lucia|Sten,Sixten|Gottfrid|Assar|Stig|Abraham|Isak|Israel,Moses|Tomas|Natanael,Jonatan|Adam|Eva||Stefan,Staffan|Johannes,Johan|Benjamin|Natalia,Natalie|Abel,Set|Sylvester"];
+/* =====================================================================
+   EXTRAKORT (nedräkning, väder, namnsdagar, nästa röda dag)
+   Vilka kort som visas, och i vilken ordning, sparas i kalender.json
+   ===================================================================== */
+const CARD_TYPES = [
+  ['countdown', 'Nedräkning', 'Räknar ner till ett datum eller klockslag, med egen rubrik.', true],
+  ['weather', 'Väder', 'Vädret just nu och idag, plus soluppgång och solnedgång.', true],
+  ['namnsdag', 'Namnsdagar', 'Vilka som har namnsdag idag och i morgon.', false],
+  ['redday', 'Nästa röda dag', 'Nästa helgdag och hur många dagar det är kvar.', false]
+];
+function cardsList() {
+  const c = S.data && S.data.settings && S.data.settings.cards;
+  return Array.isArray(c) ? c : [{ id: 'k_red', type: 'redday' }];
+}
+function cardName(c) {
+  if (c.type === 'countdown') return 'Nedräkning: ' + (c.title || 'utan rubrik');
+  if (c.type === 'weather') return 'Väder: ' + (c.name || 'okänd plats');
+  return (CARD_TYPES.find(x => x[0] === c.type) || [0, c.type])[1];
+}
+function saveCards(fn, msg) {
+  mutate(d => {
+    d.settings = d.settings || {};
+    const list = Array.isArray(d.settings.cards) ? d.settings.cards.slice() : cardsList().map(x => Object.assign({}, x));
+    d.settings.cards = fn(list) || list;
+  }, msg);
+}
+
+/* ---------- nedräkning ---------- */
+function cdTarget(c) {
+  if (!c.date) return null;
+  return c.time ? parseLocal(c.date + 'T' + c.time) : parseDate(c.date);
+}
+function cdText(c) {
+  const at = cdTarget(c); if (!at) return ['–', ''];
+  const now = new Date(), days = Math.round((sod(at) - today0()) / 86400000);
+  if (c.time) {
+    const ms = at - now;
+    if (ms <= 0) return days === 0 ? ['Nu!', 'det är dags'] : [String(-days), -days === 1 ? 'dag sedan' : 'dagar sedan'];
+    if (ms < 86400000 * 2) {
+      const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+      return h ? [h + ' h ' + m + ' min', 'kvar'] : [m + ' min', 'kvar'];
+    }
+  }
+  if (days === 0) return ['Idag!', ''];
+  if (days < 0) return [String(-days), -days === 1 ? 'dag sedan' : 'dagar sedan'];
+  return [String(days), days === 1 ? 'dag kvar' : 'dagar kvar'];
+}
+function cdCard(c) {
+  const at = cdTarget(c), v = cdText(c);
+  const when = at ? cap(DAYS[at.getDay()]) + ' ' + at.getDate() + ' ' + MONTHS[at.getMonth()] + (at.getFullYear() !== new Date().getFullYear() ? ' ' + at.getFullYear() : '') + (c.time ? ' kl ' + c.time : '') : '';
+  return `<section class="w kcard cd"><h3>${esc(c.title || 'Nedräkning')}</h3><p class="cdrow"><b class="cdv" data-cd="${esc(c.id)}">${esc(v[0])}</b><span class="cdu" data-cdu="${esc(c.id)}">${esc(v[1])}</span></p><p class="ksub">${esc(when)}</p></section>`;
+}
+function tickCountdowns() {
+  cardsList().forEach(c => {
+    if (c.type !== 'countdown') return;
+    const v = cdText(c);
+    document.querySelectorAll(`[data-cd="${CSS.escape(c.id)}"]`).forEach(el => { el.textContent = v[0]; });
+    document.querySelectorAll(`[data-cdu="${CSS.escape(c.id)}"]`).forEach(el => { el.textContent = v[1]; });
+  });
+}
+
+/* ---------- väder (Open-Meteo, gratis och utan nyckel) ---------- */
+const WX = {};
+const WXI = {
+  sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5z"/>',
+  part: '<path d="M8.5 3.5v1.3M3.6 8.5h1.3M5 5l.9.9M13.1 5l-.9.9"/><path d="M5.8 11.5a3.5 3.5 0 0 1 6.3-2.6"/><path d="M8.5 19.5h9a3.5 3.5 0 0 0 .3-7 5 5 0 0 0-9.6 1.2 3 3 0 0 0 .3 5.8z"/>',
+  cloud: '<path d="M7 19h10.5a4 4 0 0 0 .4-8 6 6 0 0 0-11.6 1.5A3.3 3.3 0 0 0 7 19z"/>',
+  fog: '<path d="M4 9h16M3 13h18M5 17h14"/>',
+  rain: '<path d="M7 15h10.5a4 4 0 0 0 .4-8 6 6 0 0 0-11.6 1.5A3.3 3.3 0 0 0 7 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>',
+  snow: '<path d="M7 15h10.5a4 4 0 0 0 .4-8 6 6 0 0 0-11.6 1.5A3.3 3.3 0 0 0 7 15z"/><path d="M8 19h.01M12 21h.01M16 19h.01M10 22h.01M14 23h.01"/>',
+  storm: '<path d="M7 15h10.5a4 4 0 0 0 .4-8 6 6 0 0 0-11.6 1.5A3.3 3.3 0 0 0 7 15z"/><path d="M12.5 15l-2 4h3l-2 4"/>'
+};
+function wxInfo(code, day) {
+  const c = Number(code);
+  if (c === 0) return [day ? 'sun' : 'moon', 'Klart'];
+  if (c === 1) return [day ? 'sun' : 'moon', 'Mestadels klart'];
+  if (c === 2) return ['part', 'Halvklart'];
+  if (c === 3) return ['cloud', 'Mulet'];
+  if (c === 45 || c === 48) return ['fog', 'Dimma'];
+  if (c >= 51 && c <= 55) return ['rain', 'Duggregn'];
+  if (c === 56 || c === 57) return ['rain', 'Underkylt duggregn'];
+  if (c === 61) return ['rain', 'Lätt regn'];
+  if (c === 63) return ['rain', 'Regn'];
+  if (c === 65) return ['rain', 'Kraftigt regn'];
+  if (c === 66 || c === 67) return ['rain', 'Underkylt regn'];
+  if (c === 71) return ['snow', 'Lätt snöfall'];
+  if (c === 73) return ['snow', 'Snöfall'];
+  if (c === 75) return ['snow', 'Kraftigt snöfall'];
+  if (c === 77) return ['snow', 'Snökorn'];
+  if (c >= 80 && c <= 82) return ['rain', 'Regnskurar'];
+  if (c === 85 || c === 86) return ['snow', 'Snöbyar'];
+  if (c >= 95) return ['storm', 'Åska'];
+  return ['cloud', '–'];
+}
+function wxKey(c) { return Number(c.lat).toFixed(3) + ',' + Number(c.lon).toFixed(3); }
+async function wxFetch(c) {
+  const k = wxKey(c), cur = WX[k];
+  if (cur && (cur.busy || Date.now() - cur.at < 30 * 60000 || (cur.err && Date.now() - cur.at < 3 * 60000))) return;
+  WX[k] = Object.assign({}, cur, { busy: true });
+  try {
+    const u = 'https://api.open-meteo.com/v1/forecast?latitude=' + c.lat + '&longitude=' + c.lon +
+      '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day' +
+      '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,daylight_duration' +
+      '&timezone=auto&forecast_days=1&wind_speed_unit=ms';
+    const r = await fetch(u);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    WX[k] = { at: Date.now(), data: j };
+    store.set('kal_wx_' + k, WX[k]);
+  } catch (e) { WX[k] = { at: Date.now(), err: true, data: cur && cur.data }; }
+  if (!S.sheet && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) render();
+}
+function wxCard(c) {
+  const k = wxKey(c);
+  if (!WX[k]) { const saved = store.get('kal_wx_' + k, null); if (saved) WX[k] = saved; }
+  const w = WX[k];
+  if (!w || !w.busy) setTimeout(() => wxFetch(c), 0);
+  const j = w && w.data;
+  if (!j || !j.current) return `<section class="w kcard"><h3>${esc(c.name || 'Väder')}</h3><p class="ksub">${w && w.err ? 'Kunde inte hämta vädret just nu.' : 'Hämtar vädret…'}</p></section>`;
+  const cu = j.current, dy = j.daily || {}, info = wxInfo(cu.weather_code, cu.is_day);
+  const t = v => Math.round(v) + '°';
+  const tm = s => (s || '').slice(11, 16);
+  const dl = dy.daylight_duration && dy.daylight_duration[0];
+  const dlText = dl ? Math.floor(dl / 3600) + ' h ' + Math.round((dl % 3600) / 60) + ' min dagsljus' : '';
+  const rain = dy.precipitation_probability_max && dy.precipitation_probability_max[0];
+  return `<section class="w kcard wx"><h3>${esc(c.name || 'Väder')}</h3>
+    <div class="wxnow"><svg class="wxi" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="${esc(info[1])}">${WXI[info[0]]}</svg>
+    <b class="wxt">${t(cu.temperature_2m)}</b><span class="wxd"><b>${esc(info[1])}</b><span>Känns som ${t(cu.apparent_temperature)}, vind ${Math.round(cu.wind_speed_10m)} m/s</span></span></div>
+    <div class="wxrow"><span>Idag <b>${dy.temperature_2m_max ? t(dy.temperature_2m_max[0]) : '–'}</b> / ${dy.temperature_2m_min ? t(dy.temperature_2m_min[0]) : '–'}</span>${rain != null ? `<span>Risk för nederbörd <b>${rain} %</b></span>` : ''}</div>
+    <div class="wxsun"><span>${sv('<path d="M12 3v6M8.5 6.5 12 3l3.5 3.5"/><path d="M4 18a8 8 0 0 1 16 0"/><path d="M2 21h20"/>', 20)}Upp <b>${tm(dy.sunrise && dy.sunrise[0])}</b></span><span>${sv('<path d="M12 9V3M8.5 5.5 12 9l3.5-3.5"/><path d="M4 18a8 8 0 0 1 16 0"/><path d="M2 21h20"/>', 20)}Ner <b>${tm(dy.sunset && dy.sunset[0])}</b></span></div>
+    ${dlText ? `<p class="ksub">${dlText}</p>` : ''}</section>`;
+}
+
+/* ---------- namnsdagar ---------- */
+function namesOn(d) { const m = NAMN[d.getMonth()]; const x = m ? m.split('|')[d.getDate() - 1] : ''; return x ? x.split(',') : []; }
+function joinNames(a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' och ' + a[a.length - 1]; }
+function namnCard() {
+  const t = today0(), a = namesOn(t), b = namesOn(addDays(t, 1));
+  return `<section class="w kcard nd"><h3>Namnsdag</h3>${a.length ? `<p class="ndn">${esc(joinNames(a))}</p>` : '<p class="ksub">Ingen har namnsdag idag.</p>'}${b.length ? `<p class="ksub">I morgon: ${esc(joinNames(b))}</p>` : ''}</section>`;
+}
+
+/* ---------- nästa röda dag ---------- */
+function redCard() {
+  const t = today0(); let red = null;
+  for (let k = 1; k < 400 && !red; k++) { const d = addDays(t, k), h = holiday(d); if (h && h.red) red = { d, h, k }; }
+  return red ? `<section class="w redday"><span class="rd"><b>${red.d.getDate()}</b><span>${MONTHS_SHORT[red.d.getMonth()]}</span></span><p><b>${esc(red.h.n)}</b><span>Nästa röda dag, ${red.k === 1 ? 'i morgon' : DAYS[red.d.getDay()] + ' om ' + red.k + ' dagar'}</span></p></section>` : '';
+}
+function cardsHtml() {
+  return cardsList().map(c => c.type === 'countdown' ? cdCard(c) : c.type === 'weather' ? (c.lat != null ? wxCard(c) : '') : c.type === 'namnsdag' ? namnCard() : c.type === 'redday' ? redCard() : '').join('');
+}
+
+/* ---------- inställningar för korten ---------- */
+function cardsSettings() {
+  const list = cardsList();
+  const rows = list.map((c, i) => `<div class="calline krow"><span class="kname">${esc(cardName(c))}</span>
+    <button class="icon sm" data-act="cardmove" data-id="${esc(c.id)}" data-k="-1" aria-label="Flytta upp ${esc(cardName(c))}"${i === 0 ? ' disabled' : ''}>${sv('<path d="M6 15l6-6 6 6"/>', 20)}</button>
+    <button class="icon sm" data-act="cardmove" data-id="${esc(c.id)}" data-k="1" aria-label="Flytta ner ${esc(cardName(c))}"${i === list.length - 1 ? ' disabled' : ''}>${sv('<path d="M6 9l6 6 6-6"/>', 20)}</button>
+    ${c.type === 'countdown' || c.type === 'weather' ? `<button class="smallbtn" data-act="cardedit" data-id="${esc(c.id)}">Ändra</button>` : ''}
+    <button class="smallbtn" data-act="carddel" data-id="${esc(c.id)}" aria-label="Ta bort ${esc(cardName(c))}">Ta bort</button></div>`).join('');
+  return `${rows || '<p class="note" style="margin-top:0">Inga kort ännu.</p>'}
+    <div class="btns" style="margin-top:10px"><button class="btn ghost" data-act="addcard">+ Lägg till kort</button></div>
+    <p class="note">Korten visas ${S.desk ? 'i vänsterspalten under Ny händelse' : 'i månadsvyn, under dagens händelser'}. Ordningen sparas i ${DATA_FILE}, så den blir likadan på alla dina enheter.</p>`;
+}
+function addCardSheet() {
+  const have = new Set(cardsList().map(c => c.type));
+  const rows = CARD_TYPES.map(t => {
+    const taken = !t[3] && have.has(t[0]);
+    return `<button class="addrow" data-act="addcardtype" data-t="${t[0]}"${taken ? ' disabled' : ''}><b>${t[1]}</b><span>${taken ? 'Finns redan.' : t[2]}</span></button>`;
+  }).join('');
+  return dlg(`<h2 id="sht">Lägg till kort</h2><div class="addlist">${rows}</div><div class="btns" style="margin-top:14px"><button class="btn ghost" data-act="settings">Tillbaka</button></div>`);
+}
+function openCardForm(c, type) {
+  S.cardForm = c ? Object.assign({ err: '', results: null, busy: false, q: '' }, c) : { id: null, type, title: '', date: '', time: '', name: '', lat: null, lon: null, err: '', results: null, busy: false, q: '' };
+  S.sheet = 'cardform'; render();
+  setTimeout(() => { const el = document.getElementById(type === 'weather' || (c && c.type === 'weather') ? 'wx-q' : 'cd-title'); if (el && !c) el.focus(); }, 60);
+}
+function cardFormSheet() {
+  const f = S.cardForm;
+  if (f.type === 'countdown') {
+    return dlg(`<form class="form" data-form="card" novalidate><h2 id="sht">${f.id ? 'Ändra nedräkning' : 'Ny nedräkning'}</h2>
+      <div class="fgroup"><label for="cd-title" class="sr">Rubrik</label><input class="fin title" id="cd-title" name="title" value="${esc(f.title)}" placeholder="Rubrik, t.ex. Julafton" autocomplete="off"></div>
+      <div class="fgroup"><div class="frow"><label for="cd-date">Datum</label><input type="date" class="fsel" id="cd-date" name="date" value="${esc(f.date)}"></div>
+      <div class="frow"><label for="cd-time">Klockslag (valfritt)</label><input type="time" class="fsel" id="cd-time" name="time" value="${esc(f.time)}"></div></div>
+      ${f.err ? `<p class="ferr" role="alert">${esc(f.err)}</p>` : ''}
+      <div class="btns"><button type="submit" class="btn primary">Spara</button><button type="button" class="btn ghost" data-act="settings">Avbryt</button></div></form>`);
+  }
+  const res = f.results ? (f.results.length ? f.results.map((r, i) => `<button type="button" class="addrow" data-act="wxpick" data-i="${i}"><b>${esc(r.name)}</b><span>${esc([r.admin1, r.country].filter(Boolean).join(', '))}</span></button>`).join('') : '<p class="note">Hittade ingen ort med det namnet.</p>') : '';
+  return dlg(`<form class="form" data-form="card" novalidate><h2 id="sht">${f.id ? 'Ändra väder' : 'Väder'}</h2>
+    ${f.lat != null ? `<div class="fgroup"><div class="frow"><span>Plats</span><b>${esc(f.name)}</b></div></div>` : ''}
+    <div class="fgroup"><label for="wx-q" class="sr">Sök ort</label><input class="fin" id="wx-q" name="q" value="${esc(f.q)}" placeholder="${f.lat != null ? 'Byt ort, t.ex. Göteborg' : 'Sök ort, t.ex. Uppsala'}" autocomplete="off" enterkeyhint="search"></div>
+    <div class="btns"><button type="button" class="btn ghost" data-act="wxsearch"${f.busy ? ' disabled' : ''}>${f.busy ? 'Söker…' : 'Sök ort'}</button><button type="button" class="btn ghost" data-act="wxgeo">Använd min nuvarande plats</button></div>
+    ${res ? `<div class="addlist">${res}</div>` : ''}
+    ${f.err ? `<p class="ferr" role="alert">${esc(f.err)}</p>` : ''}
+    <div class="btns"><button type="submit" class="btn primary"${f.lat == null ? ' disabled' : ''}>Spara</button><button type="button" class="btn ghost" data-act="settings">Avbryt</button></div></form>`);
+}
+async function wxSearch() {
+  const f = S.cardForm, el = document.getElementById('wx-q');
+  f.q = el ? el.value.trim() : f.q;
+  if (!f.q) { f.err = 'Skriv namnet på en ort.'; render(); return; }
+  f.busy = true; f.err = ''; render();
+  try {
+    const r = await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=sv&format=json&name=' + encodeURIComponent(f.q));
+    const j = await r.json();
+    f.results = (j.results || []).map(x => ({ name: x.name, admin1: x.admin1, country: x.country, lat: x.latitude, lon: x.longitude }));
+  } catch (e) { f.err = 'Kunde inte söka just nu. Kontrollera internetanslutningen.'; }
+  f.busy = false; render();
+}
+function wxGeo() {
+  const f = S.cardForm;
+  if (!navigator.geolocation) { f.err = 'Den här enheten kan inte ange din plats.'; render(); return; }
+  f.err = ''; f.busy = true; render();
+  navigator.geolocation.getCurrentPosition(p => {
+    f.lat = Math.round(p.coords.latitude * 1000) / 1000; f.lon = Math.round(p.coords.longitude * 1000) / 1000;
+    f.name = f.name && f.id ? f.name : 'Min plats'; f.results = null; f.busy = false; render();
+  }, () => { f.busy = false; f.err = 'Fick inte använda din plats. Sök på en ort i stället.'; render(); }, { timeout: 15000, maximumAge: 600000 });
+}
+function submitCardForm(form) {
+  const f = S.cardForm;
+  if (f.type === 'countdown') {
+    f.title = form.elements.title.value.trim(); f.date = form.elements.date.value; f.time = form.elements.time.value;
+    if (!f.title) { f.err = 'Skriv en rubrik.'; render(); return; }
+    if (!f.date) { f.err = 'Välj ett datum.'; render(); return; }
+  } else {
+    const q = form.elements.q.value.trim();
+    if (q && q !== f.q) { wxSearch(); return; }
+    if (f.lat == null) { if (q) wxSearch(); else { f.err = 'Välj en plats först.'; render(); } return; }
+  }
+  const card = f.type === 'countdown' ? { id: f.id || newId('k'), type: 'countdown', title: f.title, date: f.date, time: f.time || '' } : { id: f.id || newId('k'), type: 'weather', name: f.name, lat: f.lat, lon: f.lon };
+  const isNew = !f.id;
+  S.sheet = 'settings'; S.cardForm = null;
+  saveCards(list => {
+    const i = list.findIndex(x => x.id === card.id);
+    if (i >= 0) list[i] = card; else list.push(card);
+  }, (isNew ? 'nytt kort ' : 'ändrar kort ') + '"' + cardName(card) + '"');
+}
 function settingsSheet() {
   const th = [['auto', 'Auto'], ['light', 'Ljust'], ['dark', 'Mörkt']].map(t => `<button data-act="settheme" data-v="${t[0]}" aria-pressed="${S.theme === t[0]}">${t[1]}</button>`).join('');
   const rows = S.calendars.map(c => `<div class="calline"><button class="calrow" role="switch" aria-checked="${c.on}" data-act="togglecal" data-id="${esc(c.id)}" aria-label="Visa ${esc(c.name)}"><i style="width:14px;height:14px;border-radius:4px;background:${esc(c.color)};flex:none"></i><span style="flex:1;min-width:0;font-size:16px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span><span class="switch"><i></i></span></button><button class="smallbtn" data-act="editcal" data-id="${esc(c.id)}" aria-label="Ändra ${esc(c.name)}">Ändra</button></div>`).join('');
@@ -1212,6 +1478,7 @@ function settingsSheet() {
     <p class="note">Auto följer telefonens eller datorns inställning.</p>
     <h3 class="shh">Kalendrar</h3>${rows}
     <div class="btns" style="margin-top:10px"><button class="btn ghost" data-act="newcal">+ Ny kalender</button></div>
+    <h3 class="shh">Kort</h3>${cardsSettings()}
     <h3 class="shh">Påminnelser</h3>${pushSettings()}
     <h3 class="shh">Google Kalender</h3><p class="note" style="margin-top:0">Kopiera in händelser från Google till din egen kalender. Inget ändras i Google, och sidan behöver inte Google efteråt.</p>
     <div class="btns" style="margin-top:10px"><button class="btn ghost" data-act="import">Importera från Google Kalender</button></div>
@@ -1267,6 +1534,8 @@ function sheet() {
   if (S.sheet === 'cal' && S.calForm) return calSheet();
   if (S.sheet === 'event') return eventSheet();
   if (S.sheet === 'mpick') return monthPicker();
+  if (S.sheet === 'addcard') return addCardSheet();
+  if (S.sheet === 'cardform' && S.cardForm) return cardFormSheet();
   return '';
 }
 
@@ -1314,7 +1583,7 @@ function viewMonth() {
   <header class="top mhead"><h1><button class="titlebtn" data-act="openmp" aria-label="Välj månad och år">${cap(MONTHS[m.getMonth()])} <span>${m.getFullYear()}</span>${I.down}</button></h1>
   <div class="hbtns"><button class="pill" data-act="today">Idag</button><button class="icon" data-act="prev" aria-label="Föregående månad">${I.prev}</button><button class="icon" data-act="next" aria-label="Nästa månad">${I.next}</button></div></header>
   <div class="grid"><div class="whead" aria-hidden="true"><span class="v">v.</span><span>M</span><span>T</span><span>O</span><span>T</span><span>F</span><span>L</span><span class="s">S</span></div>${grid}</div>
-  <section class="list"><div class="lhead"><h2>${title}</h2><button data-act="openday">Öppna dagen</button></div>${holiday(S.sel) ? `<p class="holi">${esc(holiday(S.sel).n)}</p>` : ''}${list}</section></div>`;
+  <section class="list"><div class="lhead"><h2>${title}</h2><button data-act="openday">Öppna dagen</button></div>${holiday(S.sel) ? `<p class="holi">${esc(holiday(S.sel).n)}</p>` : ''}${list}</section><div class="cards">${cardsHtml()}</div></div>`;
 }
 function viewDay() {
   const d = S.sel, t = today0(), ws = mondayOf(d), isT = sameDay(d, t);
@@ -1437,13 +1706,10 @@ function sidePanel() {
     ag += `<div class="agday"><div class="agd${isRed(d) ? ' red' : ''}"><span>${label}</span>${h ? `<em>${esc(h.n)}</em>` : ''}</div>${evs.slice(0, 5).map(e => `<button class="agi" data-act="open" ${oAttr(e)}><i style="background:${esc(e.color)}"></i><span class="tm">${coversDay(e, d) ? 'Heldag' : e.start < d ? '' : hm(e.start)}</span><b>${esc(e.title)}</b></button>`).join('')}${evs.length > 5 ? `<button class="more" data-act="dayopen" data-d="${dash(d)}">+${evs.length - 5} till</button>` : ''}</div>`;
   }
   const agenda = `<section class="w"><h3>Kommande sju dagar</h3>${ag || '<p class="agempty">Inget inplanerat. Tryck på Ny händelse för att lägga till något.</p>'}</section>`;
-  let red = null;
-  for (let k = 1; k < 400 && !red; k++) { const d = addDays(t, k), h = holiday(d); if (h && h.red) red = { d, h, k }; }
-  const redW = red ? `<section class="w redday"><span class="rd"><b>${red.d.getDate()}</b><span>${MONTHS_SHORT[red.d.getMonth()]}</span></span><p><b>${esc(red.h.n)}</b><span>Nästa röda dag, ${cap(DAYS[red.d.getDay()]).toLowerCase()} om ${red.k} ${red.k === 1 ? 'dag' : 'dagar'}</span></p></section>` : '';
   return `<aside class="side">
     ${hero}
     <button class="btn accent" data-act="new">${I.plusS}Ny händelse</button>
-    ${agenda}${redW}
+    ${cardsHtml()}${agenda}
     <section class="w">${miniMonth()}</section>
   </aside>`;
 }
@@ -1569,6 +1835,24 @@ document.addEventListener('click', ev => {
     case 'pickToday': selectDay(t); if (S.view === 'search') S.view = 'month'; if (S.view !== 'month') S.scrollDay = true; S.sheet = null; render(); break;
     case 'pushtoggle': S.push ? pushOff() : pushOn(); break;
     case 'pushtest': pushTest(); break;
+    case 'addcard': S.sheet = 'addcard'; render(); break;
+    case 'addcardtype': {
+      const ty = el.dataset.t;
+      if (ty === 'countdown' || ty === 'weather') { openCardForm(null, ty); break; }
+      S.sheet = 'settings';
+      saveCards(list => { list.push({ id: newId('k'), type: ty }); }, 'nytt kort "' + cardName({ type: ty }) + '"');
+      break;
+    }
+    case 'cardmove': {
+      const id = el.dataset.id, k = Number(el.dataset.k);
+      saveCards(list => { const i = list.findIndex(x => x.id === id), j = i + k; if (i < 0 || j < 0 || j >= list.length) return; const x = list[i]; list[i] = list[j]; list[j] = x; }, 'flyttar kort');
+      break;
+    }
+    case 'cardedit': { const c = cardsList().find(x => x.id === el.dataset.id); if (c) openCardForm(c); break; }
+    case 'carddel': { const c = cardsList().find(x => x.id === el.dataset.id); if (c) saveCards(list => list.filter(x => x.id !== c.id), 'tar bort kort "' + cardName(c) + '"'); break; }
+    case 'wxsearch': wxSearch(); break;
+    case 'wxgeo': wxGeo(); break;
+    case 'wxpick': { const f = S.cardForm, r = f.results[+el.dataset.i]; f.lat = r.lat; f.lon = r.lon; f.name = r.name; f.results = null; f.q = ''; f.err = ''; render(); break; }
     case 'toggletheme': setTheme(isDark() ? 'light' : 'dark'); break;
     case 'togglecal': {
       const c = calById(el.dataset.id);
@@ -1633,6 +1917,7 @@ document.addEventListener('submit', ev => {
   else if (f.dataset.form === 'search') { const q = f.q.value.trim(); if (q) { f.q.blur(); doSearch(q); } }
   else if (f.dataset.form === 'event') submitEvent(f);
   else if (f.dataset.form === 'cal') submitCal(f);
+  else if (f.dataset.form === 'card') submitCardForm(f);
 });
 /* ---------- svep och dra (mobil) ---------- */
 let sw = null;
@@ -1709,7 +1994,8 @@ document.addEventListener('visibilitychange', () => {
 });
 deskMQ.addEventListener('change', e => { S.desk = e.matches; if (S.desk) window.scrollTo(0, 0); S.scrollDay = true; render(); });
 darkMQ.addEventListener('change', () => { applyTheme(); render(); });
-setInterval(() => { if (S.mode === 'app' && (S.view === 'day' || S.view === 'week') && !S.sheet) render(); }, 60000);
+setInterval(() => { if (S.mode === 'app' && (S.view === 'day' || S.view === 'week') && !S.sheet) render(); else if (S.mode === 'app') tickCountdowns(); }, 60000);
+setInterval(() => { if (S.mode === 'app' && document.visibilityState === 'visible') cardsList().forEach(c => { if (c.type === 'weather' && c.lat != null) wxFetch(c); }); }, 5 * 60000);
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installPrompt = e; if (S.sheet === 'settings') render(); });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
