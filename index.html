@@ -1240,11 +1240,15 @@ const CARD_TYPES = [
   ['countdown', 'Nedräkning', 'Räknar ner till ett datum eller klockslag, med egen rubrik.', true],
   ['weather', 'Väder', 'Vädret just nu och idag, plus soluppgång och solnedgång.', true],
   ['namnsdag', 'Namnsdagar', 'Vilka som har namnsdag idag och i morgon.', false],
+  ['week', 'Kommande sju dagar', 'Dina händelser de närmaste sju dagarna, dag för dag.', false],
   ['redday', 'Nästa röda dag', 'Nästa helgdag och hur många dagar det är kvar.', false]
 ];
 function cardsList() {
-  const c = S.data && S.data.settings && S.data.settings.cards;
-  return Array.isArray(c) ? c : [{ id: 'k_red', type: 'redday' }];
+  const st = S.data && S.data.settings, c = st && st.cards;
+  if (!Array.isArray(c)) return [{ id: 'k_week', type: 'week' }, { id: 'k_red', type: 'redday' }];
+  /* listor sparade innan "Kommande sju dagar" blev ett kort får det överst */
+  if (!st.cardsV2 && !c.some(x => x.type === 'week')) return [{ id: 'k_week', type: 'week' }].concat(c);
+  return c;
 }
 function cardName(c) {
   if (c.type === 'countdown') return 'Nedräkning: ' + (c.title || 'utan rubrik');
@@ -1254,8 +1258,9 @@ function cardName(c) {
 function saveCards(fn, msg) {
   mutate(d => {
     d.settings = d.settings || {};
-    const list = Array.isArray(d.settings.cards) ? d.settings.cards.slice() : cardsList().map(x => Object.assign({}, x));
+    const list = cardsList().map(x => Object.assign({}, x));
     d.settings.cards = fn(list) || list;
+    d.settings.cardsV2 = true;
   }, msg);
 }
 
@@ -1374,6 +1379,21 @@ function namnCard() {
   return `<section class="w kcard nd"><h3>Namnsdag</h3>${a.length ? `<p class="ndn">${esc(joinNames(a))}</p>` : '<p class="ksub">Ingen har namnsdag idag.</p>'}${b.length ? `<p class="ksub">I morgon: ${esc(joinNames(b))}</p>` : ''}</section>`;
 }
 
+function weekCard() {
+  const t = today0(), n = new Date();
+  let ag = '';
+  for (let k = 0; k < 7; k++) {
+    const d = addDays(t, k);
+    let evs = eventsOn(d);
+    if (k === 0) evs = evs.filter(e => coversDay(e, d) || e.end > n);
+    const h = holiday(d);
+    if (!evs.length) continue;
+    const label = k === 0 ? 'Idag' : k === 1 ? 'I morgon' : cap(DAYS[d.getDay()]) + ' ' + d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()];
+    ag += `<div class="agday"><div class="agd${isRed(d) ? ' red' : ''}"><span>${label}</span>${h ? `<em>${esc(h.n)}</em>` : ''}</div>${evs.slice(0, 5).map(e => `<button class="agi" data-act="open" ${oAttr(e)}><i style="background:${esc(e.color)}"></i><span class="tm">${coversDay(e, d) ? 'Heldag' : e.start < d ? '' : hm(e.start)}</span><b>${esc(e.title)}</b></button>`).join('')}${evs.length > 5 ? `<button class="more" data-act="dayopen" data-d="${dash(d)}">+${evs.length - 5} till</button>` : ''}</div>`;
+  }
+  return `<section class="w"><h3>Kommande sju dagar</h3>${ag || '<p class="agempty">Inget inplanerat. </p>'}</section>`;
+}
+
 /* ---------- nästa röda dag ---------- */
 function redCard() {
   const t = today0(); let red = null;
@@ -1381,7 +1401,7 @@ function redCard() {
   return red ? `<section class="w redday"><span class="rd"><b>${red.d.getDate()}</b><span>${MONTHS_SHORT[red.d.getMonth()]}</span></span><p><b>${esc(red.h.n)}</b><span>Nästa röda dag, ${red.k === 1 ? 'i morgon' : DAYS[red.d.getDay()] + ' om ' + red.k + ' dagar'}</span></p></section>` : '';
 }
 function cardsHtml() {
-  return cardsList().map(c => c.type === 'countdown' ? cdCard(c) : c.type === 'weather' ? (c.lat != null ? wxCard(c) : '') : c.type === 'namnsdag' ? namnCard() : c.type === 'redday' ? redCard() : '').join('');
+  return cardsList().map(c => c.type === 'countdown' ? cdCard(c) : c.type === 'weather' ? (c.lat != null ? wxCard(c) : '') : c.type === 'namnsdag' ? namnCard() : c.type === 'redday' ? redCard() : c.type === 'week' ? weekCard() : '').join('');
 }
 
 /* ---------- inställningar för korten ---------- */
@@ -1695,21 +1715,10 @@ function sidePanel() {
   else if (nx) status = `<button class="status" data-act="open" ${oAttr(nx)}><i style="background:${esc(nx.color)}"></i><span><b>Nästa: ${esc(nx.title)}</b>${cap(relDay(nx.start))} kl ${hm(nx.start)}${nx.location ? ', ' + esc(nx.location) : ''}</span></button>`;
   else status = `<div class="status"><span>Inget inplanerat de närmaste veckorna.</span></div>`;
   const hero = `<section class="w hero" aria-label="Idag"><div class="hd"><span class="hnum">${t.getDate()}</span><span class="hl"><b>${cap(DAYS[t.getDay()])}</b><span>${cap(MONTHS[t.getMonth()])}, vecka ${isoWeek(t)}${holiday(t) ? ', ' + esc(holiday(t).n) : ''}</span></span></div></section>`;
-  let ag = '';
-  for (let k = 0; k < 7; k++) {
-    const d = addDays(t, k);
-    let evs = eventsOn(d);
-    if (k === 0) evs = evs.filter(e => coversDay(e, d) || e.end > n);
-    const h = holiday(d);
-    if (!evs.length) continue;
-    const label = k === 0 ? 'Idag' : k === 1 ? 'I morgon' : cap(DAYS[d.getDay()]) + ' ' + d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()];
-    ag += `<div class="agday"><div class="agd${isRed(d) ? ' red' : ''}"><span>${label}</span>${h ? `<em>${esc(h.n)}</em>` : ''}</div>${evs.slice(0, 5).map(e => `<button class="agi" data-act="open" ${oAttr(e)}><i style="background:${esc(e.color)}"></i><span class="tm">${coversDay(e, d) ? 'Heldag' : e.start < d ? '' : hm(e.start)}</span><b>${esc(e.title)}</b></button>`).join('')}${evs.length > 5 ? `<button class="more" data-act="dayopen" data-d="${dash(d)}">+${evs.length - 5} till</button>` : ''}</div>`;
-  }
-  const agenda = `<section class="w"><h3>Kommande sju dagar</h3>${ag || '<p class="agempty">Inget inplanerat. Tryck på Ny händelse för att lägga till något.</p>'}</section>`;
   return `<aside class="side">
     ${hero}
     <button class="btn accent" data-act="new">${I.plusS}Ny händelse</button>
-    ${cardsHtml()}${agenda}
+    ${cardsHtml()}
     <section class="w">${miniMonth()}</section>
   </aside>`;
 }
