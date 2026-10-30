@@ -405,6 +405,7 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .dnative{position:absolute;right:0;bottom:0;width:36px;height:40px;opacity:0;pointer-events:none;border:0;padding:0}
 .ttxt{width:70px;text-align:center}
 .dtxt{font-variant-numeric:tabular-nums}
+.ghostbtn{visibility:hidden;display:inline-flex;align-items:center}
 </style>
 </head>
 <body>
@@ -1458,7 +1459,7 @@ function cardsSettings() {
   const rows = list.map((c, i) => `<div class="calline krow"><span class="kname">${esc(cardName(c))}</span>
     <button class="icon sm" data-act="cardmove" data-id="${esc(c.id)}" data-k="-1" aria-label="Flytta upp ${esc(cardName(c))}"${i === 0 ? ' disabled' : ''}>${sv('<path d="M6 15l6-6 6 6"/>', 20)}</button>
     <button class="icon sm" data-act="cardmove" data-id="${esc(c.id)}" data-k="1" aria-label="Flytta ner ${esc(cardName(c))}"${i === list.length - 1 ? ' disabled' : ''}>${sv('<path d="M6 9l6 6 6-6"/>', 20)}</button>
-    ${c.type === 'countdown' || c.type === 'weather' ? `<button class="smallbtn" data-act="cardedit" data-id="${esc(c.id)}">Ändra</button>` : ''}
+    ${c.type === 'countdown' || c.type === 'weather' ? `<button class="smallbtn" data-act="cardedit" data-id="${esc(c.id)}">Ändra</button>` : '<span class="smallbtn ghostbtn" aria-hidden="true">Ändra</span>'}
     <button class="smallbtn" data-act="carddel" data-id="${esc(c.id)}" aria-label="Ta bort ${esc(cardName(c))}">Ta bort</button></div>`).join('');
   return `${rows || '<p class="note" style="margin-top:0">Inga kort ännu.</p>'}
     <div class="btns" style="margin-top:10px"><button class="btn ghost" data-act="addcard">+ Lägg till kort</button></div>
