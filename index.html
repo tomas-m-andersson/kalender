@@ -398,6 +398,13 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .addrow span{font-size:14px;color:var(--muted);line-height:1.4}
 .addrow:hover{background:var(--soft)}
 .addrow:disabled{opacity:.55;box-shadow:none}
+.dfield{position:relative;display:inline-flex;align-items:center;gap:2px}
+.dfield .dtxt{width:118px}
+.dpbtn{width:36px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.dpbtn:hover{background:var(--card);color:var(--fg)}
+.dnative{position:absolute;right:0;bottom:0;width:36px;height:40px;opacity:0;pointer-events:none;border:0;padding:0}
+.ttxt{width:70px;text-align:center}
+.dtxt{font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -995,6 +1002,45 @@ async function impSave() {
 /* =====================================================================
    FORMULÄR: ny / ändra händelse, kalendrar
    ===================================================================== */
+/* Egna datum- och tidsfält: alltid ÅÅÅÅ-MM-DD och 24 timmar, oavsett webbläsarens språk */
+function dateField(name, val, label, cls, id) {
+  return `<span class="dfield ${cls || ''}"><input type="text" class="fsel dtxt" name="${name}"${id ? ` id="${id}"` : ''} value="${esc(val || '')}" inputmode="numeric" placeholder="ÅÅÅÅ-MM-DD" maxlength="10" autocomplete="off" data-fmt="date"${label ? ` aria-label="${label}"` : ''}><button type="button" class="dpbtn" data-act="dpick" aria-label="Välj datum i kalender">${sv('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/>', 18)}</button><input type="date" class="dnative" tabindex="-1" aria-hidden="true"></span>`;
+}
+function timeField(name, val, label, cls, id) {
+  return `<input type="text" class="fsel ttxt ${cls || ''}" name="${name}"${id ? ` id="${id}"` : ''} value="${esc(val || '')}" inputmode="numeric" placeholder="TT:MM" maxlength="5" autocomplete="off" data-fmt="time"${label ? ` aria-label="${label}"` : ''}>`;
+}
+function okDate(v) { if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false; const d = parseDate(v); return dash(d) === v; }
+function okTime(v) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(v); }
+function fmtDigits(v, kind) {
+  const d = v.replace(/\D/g, '');
+  if (kind === 'time') {
+    const x = d.slice(0, 4);
+    return x.length > 2 ? x.slice(0, 2) + ':' + x.slice(2) : x;
+  }
+  const x = d.slice(0, 8);
+  return x.length > 6 ? x.slice(0, 4) + '-' + x.slice(4, 6) + '-' + x.slice(6) : x.length > 4 ? x.slice(0, 4) + '-' + x.slice(4) : x;
+}
+document.addEventListener('input', ev => {
+  const el = ev.target, k = el.dataset && el.dataset.fmt;
+  if (!k || ev.inputType === 'deleteContentBackward') return;
+  const f = fmtDigits(el.value, k);
+  if (f !== el.value) el.value = f;
+});
+function normTime(el) {
+  if (!el || !el.dataset || el.dataset.fmt !== 'time') return;
+  const d = el.value.replace(/\D/g, '');
+  if (d.length === 1 || d.length === 2) el.value = pad(Math.min(23, Number(d))) + ':00';
+  else if (d.length === 3) el.value = '0' + d[0] + ':' + d.slice(1);
+}
+document.addEventListener('blur', ev => normTime(ev.target), true);
+document.addEventListener('change', ev => normTime(ev.target), true);
+document.addEventListener('change', ev => {
+  const n = ev.target;
+  if (!n.classList || !n.classList.contains('dnative') || !n.value) return;
+  const t = n.parentElement.querySelector('.dtxt');
+  t.value = n.value;
+  t.dispatchEvent(new Event('change', { bubbles: true }));
+});
 function openForm(b, occ, day, hour) {
   if (b) {
     const endShown = b.allDay ? addDays(b.end, -1) : b.end;
@@ -1032,12 +1078,12 @@ function formSheet() {
     </div>
     <div class="fgroup">
       <div class="frow"><label for="f-ad">Heldag</label><input type="checkbox" class="tsw" id="f-ad" name="allDay"${f.allDay ? ' checked' : ''}></div>
-      <div class="frow"><span id="l-s">Börjar</span><span class="fdt"><input type="date" name="sd" value="${f.sd}" aria-label="Startdatum" required><input class="tm" type="time" name="st" value="${f.st}" aria-label="Starttid"></span></div>
-      <div class="frow"><span id="l-e">Slutar</span><span class="fdt"><input type="date" name="ed" value="${f.ed}" aria-label="Slutdatum" required><input class="tm" type="time" name="et" value="${f.et}" aria-label="Sluttid"></span></div>
+      <div class="frow"><span id="l-s">Börjar</span><span class="fdt">${dateField('sd', f.sd, 'Startdatum')}${timeField('st', f.st, 'Starttid', 'tm')}</span></div>
+      <div class="frow"><span id="l-e">Slutar</span><span class="fdt">${dateField('ed', f.ed, 'Slutdatum')}${timeField('et', f.et, 'Sluttid', 'tm')}</span></div>
     </div>
     <div class="fgroup">
       <div class="frow"><label for="f-rep">Upprepa</label><select class="fsel" id="f-rep" name="rep">${reps}</select></div>
-      <div class="frow repu"${f.rep ? '' : ' hidden'}><label for="f-until">Till och med</label><input type="date" class="fsel" id="f-until" name="until" value="${f.until}"></div>
+      <div class="frow repu"${f.rep ? '' : ' hidden'}><label for="f-until">Till och med</label>${dateField('until', f.until, '', '', 'f-until')}</div>
       <div class="frow"><label for="f-rem">Påminnelse</label><select class="fsel" id="f-rem" name="remind"><option value=""${f.remind === '' ? ' selected' : ''}>Standard (${remindLabel(defRemind()).toLowerCase()})</option>${REMIND.map(r => `<option value="${r[0]}"${f.remind === String(r[0]) ? ' selected' : ''}>${r[1]}</option>`).join('')}</select></div>
     </div>
     <fieldset class="fgroup"><legend class="sr">Kalender</legend><div class="cpick">${cals}</div></fieldset>
@@ -1059,6 +1105,7 @@ function submitEvent(form) {
   const bad = m => { f.err = m; render(); };
   if (!title) return bad('Skriv vad som ska hända.');
   if (!f.sd || !f.ed) return bad('Fyll i datum.');
+  if (!okDate(f.sd) || !okDate(f.ed) || (f.until && !okDate(f.until))) return bad('Skriv datum som ÅÅÅÅ-MM-DD, till exempel 2026-12-24.');
   if (!f.cal) return bad('Välj en kalender.');
   let start, end;
   if (f.allDay) {
@@ -1066,6 +1113,7 @@ function submitEvent(form) {
     start = f.sd; end = dash(addDays(parseDate(f.ed), 1));
   } else {
     if (!f.st || !f.et) return bad('Fyll i klockslag.');
+    if (!okTime(f.st) || !okTime(f.et)) return bad('Skriv klockslag som TT:MM, till exempel 17:30.');
     start = f.sd + 'T' + f.st; end = f.ed + 'T' + f.et;
     if (!(parseLocal(end) > parseLocal(start))) return bad('Sluttiden måste vara efter starttiden.');
   }
@@ -1434,8 +1482,8 @@ function cardFormSheet() {
   if (f.type === 'countdown') {
     return dlg(`<form class="form" data-form="card" novalidate><h2 id="sht">${f.id ? 'Ändra nedräkning' : 'Ny nedräkning'}</h2>
       <div class="fgroup"><label for="cd-title" class="sr">Rubrik</label><input class="fin title" id="cd-title" name="title" value="${esc(f.title)}" placeholder="Rubrik, t.ex. Julafton" autocomplete="off"></div>
-      <div class="fgroup"><div class="frow"><label for="cd-date">Datum</label><input type="date" class="fsel" id="cd-date" name="date" value="${esc(f.date)}"></div>
-      <div class="frow"><label for="cd-time">Klockslag (valfritt)</label><input type="time" class="fsel" id="cd-time" name="time" value="${esc(f.time)}"></div></div>
+      <div class="fgroup"><div class="frow"><label for="cd-date">Datum</label>${dateField('date', f.date, '', '', 'cd-date')}</div>
+      <div class="frow"><label for="cd-time">Klockslag (valfritt)</label>${timeField('time', f.time, '', '', 'cd-time')}</div></div>
       ${f.err ? `<p class="ferr" role="alert">${esc(f.err)}</p>` : ''}
       <div class="btns"><button type="submit" class="btn primary">Spara</button><button type="button" class="btn ghost" data-act="settings">Avbryt</button></div></form>`);
   }
@@ -1475,6 +1523,8 @@ function submitCardForm(form) {
     f.title = form.elements.title.value.trim(); f.date = form.elements.date.value; f.time = form.elements.time.value;
     if (!f.title) { f.err = 'Skriv en rubrik.'; render(); return; }
     if (!f.date) { f.err = 'Välj ett datum.'; render(); return; }
+    if (!okDate(f.date)) { f.err = 'Skriv datum som ÅÅÅÅ-MM-DD, till exempel 2026-12-24.'; render(); return; }
+    if (f.time && !okTime(f.time)) { f.err = 'Skriv klockslag som TT:MM, till exempel 17:30.'; render(); return; }
   } else {
     const q = form.elements.q.value.trim();
     if (q && q !== f.q) { wxSearch(); return; }
@@ -1844,6 +1894,12 @@ document.addEventListener('click', ev => {
     case 'pickToday': selectDay(t); if (S.view === 'search') S.view = 'month'; if (S.view !== 'month') S.scrollDay = true; S.sheet = null; render(); break;
     case 'pushtoggle': S.push ? pushOff() : pushOn(); break;
     case 'pushtest': pushTest(); break;
+    case 'dpick': {
+      const box = el.closest('.dfield'), t = box.querySelector('.dtxt'), n = box.querySelector('.dnative');
+      n.value = okDate(t.value) ? t.value : dash(today0());
+      try { n.showPicker(); } catch (e) { n.focus(); n.click(); }
+      break;
+    }
     case 'addcard': S.sheet = 'addcard'; render(); break;
     case 'addcardtype': {
       const ty = el.dataset.t;
@@ -1908,7 +1964,7 @@ document.addEventListener('change', ev => {
   if (n === 'sd' && E.sd.value) {
     if (!E.ed.value || E.ed.value < E.sd.value) E.ed.value = E.sd.value;
   }
-  if ((n === 'st' || n === 'sd') && E.st.value && E.sd.value === E.ed.value && (!E.et.value || E.et.value <= E.st.value)) {
+  if ((n === 'st' || n === 'sd') && okTime(E.st.value) && E.sd.value === E.ed.value && (!E.et.value || E.et.value <= E.st.value)) {
     const p = E.st.value.split(':').map(Number), h = Math.min(23, p[0] + 1);
     E.et.value = p[0] >= 23 ? '23:59' : pad(h) + ':' + pad(p[1]);
   }
