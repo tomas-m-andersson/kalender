@@ -485,6 +485,8 @@ textarea.fin{height:auto;padding:12px 16px;resize:vertical;min-height:84px;line-
 .swcustom input[type="color"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
 .ownrow{cursor:pointer}
 .ownrow>span{flex:1;min-width:0;font-size:15px}
+.remctl{display:flex;align-items:center;gap:4px}
+.remrow label{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -745,7 +747,7 @@ function rebuild() {
     let end = parseLocal(raw.end);
     if (!start) return null;
     if (!end || !(end > start)) end = allDay ? addDays(start, 1) : new Date(start.getTime() + 3600000);
-    const e = { id: raw.id, cal: raw.cal, title: raw.title || '(Ingen titel)', location: raw.location || '', desc: raw.desc || '', allDay, start, end, rep: raw.rep && REP[raw.rep.f] && raw.rep.f ? raw.rep : null, ex: new Set(raw.ex || []), color: raw.color || '', gid: raw.gid || '', remind: typeof raw.remind === 'number' ? raw.remind : null };
+    const e = { id: raw.id, cal: raw.cal, title: raw.title || '(Ingen titel)', location: raw.location || '', desc: raw.desc || '', allDay, start, end, rep: raw.rep && REP[raw.rep.f] && raw.rep.f ? raw.rep : null, ex: new Set(raw.ex || []), color: raw.color || '', gid: raw.gid || '', remind: Array.isArray(raw.remind) ? raw.remind.filter(x => typeof x === 'number') : typeof raw.remind === 'number' ? raw.remind : null };
     S.byId.set(e.id, e);
     return e;
   }).filter(Boolean);
@@ -837,6 +839,11 @@ function demoData() {
 const pushStod = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 function defRemind() { const v = S.data && S.data.settings && S.data.settings.remind; return typeof v === 'number' ? v : 15; }
 function remindOf(e) { return typeof e.remind === 'number' ? e.remind : defRemind(); }
+/* alla påminnelser för en händelse, i minuter före (tom lista = inga) */
+function remindsOf(e) {
+  const r = Array.isArray(e.remind) ? e.remind : [typeof e.remind === 'number' ? e.remind : defRemind()];
+  return [...new Set(r.filter(m => m >= 0))].sort((a, b) => b - a);
+}
 function remindLabel(m) { const r = REMIND.find(x => x[0] === m); return r ? r[1] : m + ' min innan'; }
 function minText(m) { return m < 60 ? m + ' min' : m === 60 ? '1 timme' : (m / 60) + ' timmar'; }
 function pushText(o, m) {
@@ -852,12 +859,16 @@ function pushList() {
   const vis = new Set(S.calendars.filter(c => c.on).map(c => c.id));
   for (const b of S.base) {
     if (!vis.has(b.cal)) continue;
-    const m = remindOf(b); if (m < 0) continue;
+    const ms = remindsOf(b); if (!ms.length) continue;
     for (const o of occurrences(b, new Date(now), new Date(end + 2 * 86400000))) {
       const base = o.allDay ? new Date(o.start.getFullYear(), o.start.getMonth(), o.start.getDate(), 8, 0) : o.start;
-      const at = o.allDay ? base.getTime() - (m >= 1440 ? 86400000 : 0) : base.getTime() - m * 60000;
-      if (at < now + 30000 || at > end) continue;
-      out.push({ id: (o.id + '@' + (o.occ || '')).slice(0, 120), at, titel: o.title, text: pushText(o, m) });
+      const seen = new Set();
+      for (const m of ms) {
+        const at = o.allDay ? base.getTime() - (m >= 1440 ? 86400000 : 0) : base.getTime() - m * 60000;
+        if (at < now + 30000 || at > end || seen.has(at)) continue;
+        seen.add(at);
+        out.push({ id: (o.id + '@' + (o.occ || '') + '#' + m).slice(0, 120), at, titel: o.title, text: pushText(o, m) });
+      }
     }
   }
   return out.sort((a, b) => a.at - b.at).slice(0, 480);
@@ -1124,13 +1135,13 @@ document.addEventListener('change', ev => {
 function openForm(b, occ, day, hour) {
   if (b) {
     const endShown = b.allDay ? addDays(b.end, -1) : b.end;
-    S.form = { id: b.id, title: b.title, allDay: b.allDay, sd: dash(b.start), st: hm(b.start), ed: dash(endShown), et: hm(b.end), rep: b.rep ? b.rep.f : '', until: (b.rep && b.rep.until) || '', location: b.location, cal: b.cal, desc: b.desc, occ: occ || null, isRep: !!b.rep, remind: typeof b.remind === 'number' ? String(b.remind) : '', ecolor: b.color || '', err: '', del: false };
+    S.form = { id: b.id, title: b.title, allDay: b.allDay, sd: dash(b.start), st: hm(b.start), ed: dash(endShown), et: hm(b.end), rep: b.rep ? b.rep.f : '', until: (b.rep && b.rep.until) || '', location: b.location, cal: b.cal, desc: b.desc, occ: occ || null, isRep: !!b.rep, rems: Array.isArray(b.remind) ? (b.remind.length ? b.remind.map(String) : ['-1']) : [typeof b.remind === 'number' ? String(b.remind) : ''], ecolor: b.color || '', err: '', del: false };
   } else {
     const d = day || S.sel, n = new Date();
     let h = hour != null ? hour : (sameDay(d, n) ? Math.min(23, n.getHours() + 1) : 9);
     const last = store.get('kal_lastcal', '');
     const cal = (calById(last) && last) || (S.calendars[0] && S.calendars[0].id);
-    S.form = { id: null, title: '', allDay: false, sd: dash(d), st: pad(h) + ':00', ed: dash(d), et: h >= 23 ? '23:59' : pad(h + 1) + ':00', rep: '', until: '', location: '', cal, desc: '', occ: null, isRep: false, remind: '', ecolor: '', err: '', del: false };
+    S.form = { id: null, title: '', allDay: false, sd: dash(d), st: pad(h) + ':00', ed: dash(d), et: h >= 23 ? '23:59' : pad(h + 1) + ':00', rep: '', until: '', location: '', cal, desc: '', occ: null, isRep: false, rems: [''], ecolor: '', err: '', del: false };
   }
   S.sheet = 'form'; render();
   setTimeout(() => { const t = document.getElementById('f-title'); if (t && !S.form.id) t.focus(); }, 60);
@@ -1164,7 +1175,8 @@ function formSheet() {
     <div class="fgroup">
       <div class="frow"><label for="f-rep">Upprepa</label><select class="fsel" id="f-rep" name="rep">${reps}</select></div>
       <div class="frow repu"${f.rep ? '' : ' hidden'}><label for="f-until">Till och med</label>${dateField('until', f.until, '', '', 'f-until')}</div>
-      <div class="frow"><label for="f-rem">Påminnelse</label><select class="fsel" id="f-rem" name="remind"><option value=""${f.remind === '' ? ' selected' : ''}>Standard (${remindLabel(defRemind()).toLowerCase()})</option>${REMIND.map(r => `<option value="${r[0]}"${f.remind === String(r[0]) ? ' selected' : ''}>${r[1]}</option>`).join('')}</select></div>
+      ${f.rems.map((v, i) => `<div class="frow remrow"><label for="f-rem${i}">${i === 0 ? 'Påminnelse' : (i + 1) + ':a påminnelsen'}</label><span class="remctl"><select class="fsel" id="f-rem${i}" name="remind">${i === 0 ? `<option value=""${v === '' ? ' selected' : ''}>Standard (${remindLabel(defRemind()).toLowerCase()})</option>` : ''}${REMIND.filter(r => i === 0 || r[0] >= 0).map(r => `<option value="${r[0]}"${v === String(r[0]) ? ' selected' : ''}>${r[1]}</option>`).join('')}</select>${i > 0 ? `<button type="button" class="icon sm" data-act="delrem" data-i="${i}" aria-label="Ta bort påminnelse ${i + 1}">${sv('<path d="M6 6l12 12M18 6L6 18"/>', 18)}</button>` : ''}</span></div>`).join('')}
+      ${f.rems[0] !== '-1' && f.rems.length < 5 ? '<div class="frow" style="min-height:48px"><button type="button" class="smallbtn" data-act="addrem">+ Lägg till påminnelse</button></div>' : ''}
     </div>
     ${colorPicker(f)}
     <fieldset class="fgroup"><legend class="sr">Kalender</legend><div class="cpick">${cals}</div></fieldset>
@@ -1185,7 +1197,8 @@ function colorPicker(f) {
 }
 function readForm(form) {
   const f = S.form;
-  ['title', 'location', 'sd', 'st', 'ed', 'et', 'rep', 'until', 'desc', 'remind'].forEach(n => { if (form.elements[n]) f[n] = form.elements[n].value; });
+  f.rems = [...form.querySelectorAll('select[name="remind"]')].map(x => x.value);
+  ['title', 'location', 'sd', 'st', 'ed', 'et', 'rep', 'until', 'desc'].forEach(n => { if (form.elements[n]) f[n] = form.elements[n].value; });
   f.allDay = form.elements.allDay.checked;
   const c = form.querySelector('input[name="cal"]:checked'); if (c) f.cal = c.value;
   const ec = form.querySelector('input[name="ecolor"]:checked'); f.ecolor = ec ? (ec.value === 'egen' ? form.elements.ecustom.value : ec.value) : '';
@@ -1214,7 +1227,10 @@ function submitEvent(form) {
   if (f.location.trim()) fields.location = f.location.trim();
   if (f.desc.trim()) fields.desc = f.desc.trim();
   if (f.rep) fields.rep = { f: f.rep, until: f.until || '' };
-  if (f.remind !== '' && f.remind != null) fields.remind = Number(f.remind);
+  if (!(f.rems.length === 1 && f.rems[0] === '')) {
+    const nums = [...new Set(f.rems.filter(v => v !== '-1').map(v => v === '' ? defRemind() : Number(v)))].sort((a, b) => b - a);
+    fields.remind = !nums.length ? -1 : nums.length === 1 ? nums[0] : nums;
+  }
   if (f.ecolor) fields.color = f.ecolor;
   store.set('kal_lastcal', f.cal);
   S.sheet = null; S.form = null;
@@ -1679,8 +1695,8 @@ function eventSheet() {
   if (!e) return '';
   const loc = e.location ? `<div>${I.pin}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location)}" target="_blank" rel="noopener">${esc(e.location)}</a></div>` : '';
   const rep = e.base.rep ? `<div>${I.rep}<span>${esc(repText(e.base))}</span></div>` : '';
-  const rm = remindOf(e.base);
-  const bell = rm >= 0 ? `<div>${I.bell}<span>Påminnelse ${esc(remindLabel(rm).toLowerCase())}${S.push ? '' : ' (push är avstängt på den här enheten)'}</span></div>` : '';
+  const rms = remindsOf(e.base);
+  const bell = rms.length ? `<div>${I.bell}<span>${rms.length > 1 ? 'Påminnelser' : 'Påminnelse'} ${esc(joinNames(rms.map(m => remindLabel(m).toLowerCase())))}${S.push ? '' : ' (push är avstängt på den här enheten)'}</span></div>` : '';
   return dlg(`<div style="display:flex;gap:12px;align-items:flex-start"><i style="width:14px;height:14px;border-radius:4px;background:${esc(e.color)};flex:none;margin-top:7px"></i><h2 id="sht">${esc(e.title)}</h2></div>
   <div class="meta"><div>${I.clock}<span>${esc(whenText(e))}</span></div>${rep}${bell}${loc}<div>${I.cal}<span>${esc(calName(e.cal))}</span></div></div>
   ${e.desc ? `<p class="desc">${esc(e.desc)}</p>` : ''}
@@ -2068,6 +2084,13 @@ document.addEventListener('click', ev => {
     case 'pickToday': selectDay(t); if (S.view === 'search') S.view = 'month'; if (S.view !== 'month') S.scrollDay = true; S.sheet = null; render(); break;
     case 'pushtoggle': S.push ? pushOff() : pushOn(); break;
     case 'pushtest': pushTest(); break;
+    case 'addrem': {
+      readForm(document.querySelector('[data-form="event"]'));
+      const used = S.form.rems.map(v => v === '' ? defRemind() : Number(v));
+      const nx = [60, 1440, 15, 30, 120, 5, 0].find(m => !used.includes(m));
+      S.form.rems.push(String(nx == null ? 15 : nx)); render(); break;
+    }
+    case 'delrem': readForm(document.querySelector('[data-form="event"]')); S.form.rems.splice(Number(el.dataset.i), 1); render(); break;
     case 'dpick': {
       const box = el.closest('.dfield'), t = box.querySelector('.dtxt'), n = box.querySelector('.dnative');
       n.value = okDate(t.value) ? t.value : dash(today0());
